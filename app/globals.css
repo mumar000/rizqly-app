@@ -1,0 +1,139 @@
+@import "tailwindcss";
+
+:root {
+  /* New Gen Z Color Scheme */
+  --background: #0F0F11;
+  --card-bg: #1A1B2E;
+  --foreground: #FFFFFF;
+
+  --accent-lime: #CCFF00;
+  --accent-coral: #FF6B6B;
+  --text-main: #FFFFFF;
+  --text-muted: #8F90A6;
+
+  /* Glass effect */
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-blur: blur(20px);
+
+  /* Gradients */
+  --gradient-lime: linear-gradient(135deg, #CCFF00 0%, #99CC00 100%);
+  --gradient-balance: linear-gradient(180deg, #FFF, #AAA);
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.5);
+  --shadow-lime: 0 0 20px rgba(204, 255, 0, 0.4);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-accent-lime: var(--accent-lime);
+  --color-accent-coral: var(--accent-coral);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family:
+    var(--font-geist-sans),
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Glass morphism utility class */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-md);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: var(--gradient-balance);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar - hide it */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Animations */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes morph {
+  0%, 100% {
+    border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+    transform: rotate(0deg);
+  }
+  34% {
+    border-radius: 70% 30% 50% 50% / 30% 30% 70% 70%;
+  }
+  67% {
+    border-radius: 100% 60% 60% 100% / 100% 100% 60% 60%;
+    transform: rotate(120deg);
+  }
+}
+
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease-out;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+/* Mobile-first touch improvements */
+@media (hover: none) and (pointer: coarse) {
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
