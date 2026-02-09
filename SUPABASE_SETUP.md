@@ -1,4 +1,4 @@
-# Supabase Setup Guide
+  # Supabase Setup Guide
 
 This guide will help you set up Supabase for the Rizqly GenZ app.
 
