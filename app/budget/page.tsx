@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { SpendingPieChart } from "@/components/mobile/SpendingPieChart";
 import { QuickExpenseInput } from "@/components/mobile/QuickExpenseInput";
 import { useExpenses } from "@/hooks/useExpenses";
+import Link from "next/link";
 import {
   formatPKR,
   CATEGORY_EMOJIS,
@@ -104,18 +105,33 @@ export default function BudgetPage() {
             </div>
             <h1 className="text-2xl font-bold text-white">{currentMonth}</h1>
           </div>
-          <motion.button
-            whileHover={{ scale: 1.05, rotate: 180 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={refresh}
-            className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl"
-            style={{
-              background: "rgba(255, 255, 255, 0.05)",
-              border: "1px solid rgba(255, 255, 255, 0.1)",
-            }}
-          >
-            🔄
-          </motion.button>
+          <div className="flex items-center gap-2">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={refresh}
+              className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl"
+              style={{
+                background: "rgba(255, 255, 255, 0.05)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+              }}
+            >
+              🔄
+            </motion.button>
+            <Link href="/settings">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl"
+                style={{
+                  background: "rgba(255, 255, 255, 0.05)",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                }}
+              >
+                ⚙️
+              </motion.button>
+            </Link>
+          </div>
         </div>
 
         {/* Error message */}

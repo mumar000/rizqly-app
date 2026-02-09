@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { useAuth } from "./useAuth";
 
 export interface Expense {
   id: string;
@@ -11,6 +12,8 @@ export interface Expense {
   category: string;
   created_at: string;
   raw_input: string;
+  user_id?: string;
+  date?: string;
 }
 
 export interface MonthlyStats {
@@ -20,20 +23,10 @@ export interface MonthlyStats {
   expenses: Expense[];
 }
 
-// For backwards compatibility with local storage
-interface LocalExpense {
-  id: string;
-  amount: number;
-  description: string;
-  bankAccount: string;
-  category: string;
-  createdAt: string;
-  rawInput: string;
-}
-
 const STORAGE_KEY = "rizqly_expenses";
 
 export function useExpenses() {
+  const { user } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,11 +40,13 @@ export function useExpenses() {
   };
 
   // Fetch expenses from Supabase
-  const fetchFromSupabase = async () => {
+  const fetchFromSupabase = useCallback(async () => {
+    if (!user) return [];
     try {
       const { data, error } = await supabase
-        .from("budget_expenses")
+        .from("expenses")
         .select("*")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -60,24 +55,14 @@ export function useExpenses() {
       console.error("Supabase fetch error:", err);
       throw err;
     }
-  };
+  }, [user]);
 
   // Load from localStorage (fallback)
   const loadFromLocalStorage = (): Expense[] => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        const localExpenses: LocalExpense[] = JSON.parse(stored);
-        // Convert local format to Supabase format
-        return localExpenses.map((e) => ({
-          id: e.id,
-          amount: e.amount,
-          description: e.description,
-          bank_account: e.bankAccount,
-          category: e.category,
-          created_at: e.createdAt,
-          raw_input: e.rawInput,
-        }));
+        return JSON.parse(stored);
       }
     } catch (err) {
       console.error("LocalStorage load error:", err);
@@ -88,28 +73,19 @@ export function useExpenses() {
   // Save to localStorage
   const saveToLocalStorage = (expenses: Expense[]) => {
     try {
-      const localExpenses: LocalExpense[] = expenses.map((e) => ({
-        id: e.id,
-        amount: e.amount,
-        description: e.description,
-        bankAccount: e.bank_account,
-        category: e.category,
-        createdAt: e.created_at,
-        rawInput: e.raw_input,
-      }));
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(localExpenses));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
     } catch (err) {
       console.error("LocalStorage save error:", err);
     }
   };
 
-  // Load expenses on mount
+  // Load expenses on mount and when user changes
   useEffect(() => {
     const loadExpenses = async () => {
       setIsLoading(true);
       setError(null);
 
-      if (isSupabaseConfigured()) {
+      if (isSupabaseConfigured() && user) {
         try {
           const data = await fetchFromSupabase();
           setExpenses(data);
@@ -120,6 +96,9 @@ export function useExpenses() {
           setUseSupabase(false);
           setError("Using offline mode - Supabase not available");
         }
+      } else if (!user) {
+        setExpenses([]);
+        setIsLoading(false);
       } else {
         setExpenses(loadFromLocalStorage());
         setUseSupabase(false);
@@ -129,7 +108,7 @@ export function useExpenses() {
     };
 
     loadExpenses();
-  }, []);
+  }, [user, fetchFromSupabase]);
 
   // Add new expense
   const addExpense = useCallback(
@@ -140,6 +119,11 @@ export function useExpenses() {
       category: string;
       rawInput: string;
     }) => {
+      if (!user) {
+        setError("You must be logged in to add expenses");
+        return null;
+      }
+
       const newExpense: Expense = {
         id: crypto.randomUUID(),
         amount: expense.amount,
@@ -148,6 +132,7 @@ export function useExpenses() {
         category: expense.category,
         created_at: new Date().toISOString(),
         raw_input: expense.rawInput,
+        user_id: user.id,
       };
 
       // Optimistic update
@@ -157,20 +142,21 @@ export function useExpenses() {
       if (useSupabase && isSupabaseConfigured()) {
         try {
           const { data, error } = await supabase
-            .from("budget_expenses")
+            .from("expenses")
             .insert({
+              user_id: user.id,
               amount: expense.amount,
               description: expense.description,
               category: expense.category,
               bank_account: expense.bankAccount,
               raw_input: expense.rawInput,
+              date: new Date().toISOString().split("T")[0],
             })
             .select()
             .single();
 
           if (error) throw error;
 
-          // Update with actual ID from Supabase
           if (data) {
             setExpenses((prev) =>
               prev.map((e) => (e.id === newExpense.id ? data : e)),
@@ -178,7 +164,6 @@ export function useExpenses() {
           }
         } catch (err) {
           console.error("Failed to save to Supabase:", err);
-          // Keep optimistic update but save to localStorage as backup
           saveToLocalStorage(updatedExpenses);
           setError("Saved locally - will sync when online");
         }
@@ -188,7 +173,7 @@ export function useExpenses() {
 
       return newExpense;
     },
-    [expenses, useSupabase],
+    [expenses, useSupabase, user],
   );
 
   // Delete expense
@@ -197,12 +182,13 @@ export function useExpenses() {
       const updatedExpenses = expenses.filter((e) => e.id !== id);
       setExpenses(updatedExpenses);
 
-      if (useSupabase && isSupabaseConfigured()) {
+      if (useSupabase && isSupabaseConfigured() && user) {
         try {
           const { error } = await supabase
-            .from("budget_expenses")
+            .from("expenses")
             .delete()
-            .eq("id", id);
+            .eq("id", id)
+            .eq("user_id", user.id);
 
           if (error) throw error;
         } catch (err) {
@@ -212,19 +198,20 @@ export function useExpenses() {
         saveToLocalStorage(updatedExpenses);
       }
     },
-    [expenses, useSupabase],
+    [expenses, useSupabase, user],
   );
 
   // Clear all expenses
   const clearExpenses = useCallback(async () => {
+    if (!user) return;
     setExpenses([]);
 
     if (useSupabase && isSupabaseConfigured()) {
       try {
         const { error } = await supabase
-          .from("budget_expenses")
+          .from("expenses")
           .delete()
-          .neq("id", "00000000-0000-0000-0000-000000000000"); // Delete all
+          .eq("user_id", user.id);
 
         if (error) throw error;
       } catch (err) {
@@ -232,7 +219,7 @@ export function useExpenses() {
       }
     }
     saveToLocalStorage([]);
-  }, [useSupabase]);
+  }, [useSupabase, user]);
 
   // Get current month stats
   const getMonthlyStats = useCallback(
@@ -250,10 +237,11 @@ export function useExpenses() {
         23,
         59,
         59,
+        999,
       );
 
       const monthlyExpenses = expenses.filter((e) => {
-        const date = new Date(e.created_at);
+        const date = new Date(e.created_at || e.date || "");
         return date >= monthStart && date <= monthEnd;
       });
 
@@ -292,7 +280,7 @@ export function useExpenses() {
 
   // Refresh from server
   const refresh = useCallback(async () => {
-    if (useSupabase && isSupabaseConfigured()) {
+    if (useSupabase && isSupabaseConfigured() && user) {
       setIsLoading(true);
       try {
         const data = await fetchFromSupabase();
@@ -303,13 +291,13 @@ export function useExpenses() {
       }
       setIsLoading(false);
     }
-  }, [useSupabase]);
+  }, [useSupabase, user, fetchFromSupabase]);
 
   return {
     expenses,
     isLoading,
     error,
-    isOnline: useSupabase,
+    isOnline: useSupabase && !!user,
     addExpense,
     deleteExpense,
     clearExpenses,
