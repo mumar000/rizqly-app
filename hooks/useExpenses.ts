@@ -31,7 +31,7 @@ interface LocalExpense {
   rawInput: string;
 }
 
-const STORAGE_KEY = "flux_expenses";
+const STORAGE_KEY = "rizqly_expenses";
 
 export function useExpenses() {
   const [expenses, setExpenses] = useState<Expense[]>([]);

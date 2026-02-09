@@ -89,7 +89,9 @@ export default function BudgetPage() {
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <p className="text-[#8F90A6] text-sm">Budget Tracker</p>
+              <p className="text-[#8F90A6] text-sm font-bold tracking-widest uppercase">
+                Rizqly
+              </p>
               {/* Online/Offline indicator */}
               <div
                 className="w-2 h-2 rounded-full"

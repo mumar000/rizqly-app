@@ -1,4 +1,4 @@
-# Flux Financial - Gen Z Personal Finance App
+# Rizqly - Gen Z Personal Finance App
 
 A modern, mobile-first personal finance and expense management app built for Gen Z users. Features a dark, aesthetic design with smooth animations and an addictive user experience.
 
@@ -23,6 +23,7 @@ npm install
 ### 2. Set Up Supabase
 
 Follow the detailed guide in `SUPABASE_SETUP.md` to:
+
 - Create a Supabase project
 - Set up the database schema
 - Configure authentication
@@ -48,7 +49,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ## Project Structure
 
 ```
-flux-financial-genz/
+rizqly/
 ├── app/                    # Next.js app directory
 │   ├── auth/              # Authentication pages
 │   ├── home/              # Main home screen
@@ -155,12 +156,14 @@ See `SUPABASE_SETUP.md` for the complete SQL schema.
 ## Design Philosophy
 
 ### Mobile (Primary)
+
 - **Vibe**: Lifestyle app, not fintech
 - **UX**: Thumb-first, one-hand usage, zero friction
 - **Visual**: Dark mode, soft gradients, glass cards
 - **Interaction**: Micro-animations, everything within 2 taps
 
 ### Desktop (Secondary)
+
 - **Vibe**: Calm, premium, minimal
 - **UX**: More breathing space, clear hierarchy
 - **Visual**: Lighter gradients, typography-led
@@ -178,11 +181,9 @@ See `SUPABASE_SETUP.md` for the complete SQL schema.
 ## Color Palette
 
 ```css
---primary: #8B5CF6      /* Purple */
---secondary: #EC4899    /* Pink */
---accent: #10B981       /* Green */
---warning: #F59E0B      /* Amber */
---danger: #EF4444       /* Red */
+--primary: #8b5cf6 /* Purple */ --secondary: #ec4899 /* Pink */
+  --accent: #10b981 /* Green */ --warning: #f59e0b /* Amber */ --danger: #ef4444
+  /* Red */;
 ```
 
 ## Contributing
@@ -196,16 +197,19 @@ See `SUPABASE_SETUP.md` for the complete SQL schema.
 ## Troubleshooting
 
 ### Supabase connection issues
+
 - Check `.env.local` has correct values
 - Restart dev server after env changes
 - Verify Supabase project is active
 
 ### Animation performance
+
 - Reduce motion in browser settings affects animations
 - Check Chrome DevTools Performance tab
 - Use `will-change` CSS property sparingly
 
 ### Build errors
+
 - Clear `.next` folder: `rm -rf .next`
 - Reinstall dependencies: `rm -rf node_modules && npm install`
 - Check TypeScript errors: `npx tsc --noEmit`

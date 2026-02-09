@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
-export const dynamic = 'force-dynamic';
-import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+export const dynamic = "force-dynamic";
+import { useAuth } from "@/hooks/useAuth";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 
 export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { signUp, signIn } = useAuth();
@@ -25,13 +25,13 @@ export default function AuthPage() {
     try {
       if (isSignUp) {
         await signUp(email, password, fullName);
-        router.push('/onboarding');
+        router.push("/onboarding");
       } else {
         await signIn(email, password);
-        router.push('/home');
+        router.push("/home");
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
     }
@@ -55,12 +55,8 @@ export default function AuthPage() {
           transition={{ delay: 0.2 }}
           className="text-center mb-8"
         >
-          <h1 className="text-4xl font-bold mb-2 gradient-text">
-            Flux
-          </h1>
-          <p className="text-gray-400 text-sm">
-            Your money, your way
-          </p>
+          <h1 className="text-4xl font-bold mb-2 gradient-text">Rizqly</h1>
+          <p className="text-gray-400 text-sm">Your money, your way</p>
         </motion.div>
 
         {/* Auth Card */}
@@ -73,7 +69,10 @@ export default function AuthPage() {
           <form onSubmit={handleSubmit} className="space-y-5">
             {isSignUp && (
               <div>
-                <label htmlFor="fullName" className="block text-sm font-medium mb-2 text-gray-300">
+                <label
+                  htmlFor="fullName"
+                  className="block text-sm font-medium mb-2 text-gray-300"
+                >
                   Full Name
                 </label>
                 <input
@@ -89,7 +88,10 @@ export default function AuthPage() {
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium mb-2 text-gray-300">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium mb-2 text-gray-300"
+              >
                 Email
               </label>
               <input
@@ -104,7 +106,10 @@ export default function AuthPage() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium mb-2 text-gray-300">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium mb-2 text-gray-300"
+              >
                 Password
               </label>
               <input
@@ -134,7 +139,7 @@ export default function AuthPage() {
               disabled={loading}
               className="w-full py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-500/30"
             >
-              {loading ? 'Loading...' : isSignUp ? 'Create Account' : 'Sign In'}
+              {loading ? "Loading..." : isSignUp ? "Create Account" : "Sign In"}
             </button>
           </form>
 
@@ -146,7 +151,9 @@ export default function AuthPage() {
               }}
               className="text-sm text-gray-400 hover:text-white transition-colors"
             >
-              {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+              {isSignUp
+                ? "Already have an account? Sign in"
+                : "Don't have an account? Sign up"}
             </button>
           </div>
         </motion.div>

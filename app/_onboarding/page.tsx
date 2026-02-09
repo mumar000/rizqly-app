@@ -1,33 +1,36 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
-export const dynamic = 'force-dynamic';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/lib/supabase/client';
+export const dynamic = "force-dynamic";
+import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/lib/supabase/client";
 
 const onboardingSteps = [
   {
-    emoji: '👋',
-    title: 'Welcome to Flux',
-    description: 'Your personal finance companion that makes money management fun and addictive',
+    emoji: "👋",
+    title: "Welcome to Rizqly",
+    description:
+      "Your personal finance companion that makes money management fun and addictive",
   },
   {
-    emoji: '💸',
-    title: 'Track Every Cent',
-    description: 'Add expenses in seconds with emoji categories. No spreadsheets, no hassle.',
+    emoji: "💸",
+    title: "Track Every Cent",
+    description:
+      "Add expenses in seconds with emoji categories. No spreadsheets, no hassle.",
   },
   {
-    emoji: '📊',
-    title: 'Beautiful Insights',
-    description: 'See where your money goes with gorgeous visualizations and spending patterns',
+    emoji: "📊",
+    title: "Beautiful Insights",
+    description:
+      "See where your money goes with gorgeous visualizations and spending patterns",
   },
   {
-    emoji: '🎯',
-    title: 'Crush Your Goals',
-    description: 'Set goals, track progress, and level up your financial game',
+    emoji: "🎯",
+    title: "Crush Your Goals",
+    description: "Set goals, track progress, and level up your financial game",
   },
 ];
 
@@ -43,22 +46,22 @@ export default function OnboardingPage() {
       // Complete onboarding
       if (user) {
         await supabase
-          .from('profiles')
+          .from("profiles")
           .update({ onboarding_completed: true } as never)
-          .eq('id', user.id);
+          .eq("id", user.id);
       }
-      router.push('/home');
+      router.push("/home");
     }
   };
 
   const handleSkip = async () => {
     if (user) {
       await supabase
-        .from('profiles')
+        .from("profiles")
         .update({ onboarding_completed: true } as never)
-        .eq('id', user.id);
+        .eq("id", user.id);
     }
-    router.push('/home');
+    router.push("/home");
   };
 
   const swipeConfidenceThreshold = 10000;
@@ -90,7 +93,7 @@ export default function OnboardingPage() {
             initial={{ x: 300, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -300, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={1}
@@ -106,7 +109,7 @@ export default function OnboardingPage() {
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
               className="text-8xl mb-8"
             >
               {onboardingSteps[currentStep].emoji}
@@ -145,8 +148,8 @@ export default function OnboardingPage() {
               transition={{ delay: index * 0.1 }}
               className={`h-2 rounded-full transition-all ${
                 index === currentStep
-                  ? 'w-8 bg-gradient-to-r from-purple-600 to-pink-600'
-                  : 'w-2 bg-white/20'
+                  ? "w-8 bg-gradient-to-r from-purple-600 to-pink-600"
+                  : "w-2 bg-white/20"
               }`}
             />
           ))}
@@ -160,7 +163,7 @@ export default function OnboardingPage() {
           onClick={handleNext}
           className="w-full py-4 rounded-2xl font-semibold text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg shadow-purple-500/30 active:scale-95"
         >
-          {currentStep === onboardingSteps.length - 1 ? 'Get Started' : 'Next'}
+          {currentStep === onboardingSteps.length - 1 ? "Get Started" : "Next"}
         </motion.button>
 
         {/* Swipe hint */}

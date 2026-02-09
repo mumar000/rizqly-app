@@ -269,7 +269,7 @@ export function AddExpenseModal({ open, onClose }: AddExpenseModalProps) {
                   "w-full py-5 rounded-2xl font-bold text-black text-lg uppercase tracking-wide transition-all shadow-[0_0_30px_rgba(204,255,0,0.2)]",
                   !amount || !selectedCategory
                     ? "bg-white/10 text-white/20 cursor-not-allowed"
-                    : "bg-[#CCFF00] hover:bg-[#b3e600] cursor-pointer", // Flux Neon Lime
+                    : "bg-[#CCFF00] hover:bg-[#b3e600] cursor-pointer", // Rizqly Neon Lime
                 )}
               >
                 {isSubmitting ? (

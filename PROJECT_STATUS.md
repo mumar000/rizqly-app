@@ -1,16 +1,18 @@
-# Flux Financial - Project Status
+# Rizqly - Project Status
 
 ## ✅ Completed Features
 
 ### Phase 1: Core Mobile Experience
 
 #### 1. Authentication System (/auth)
+
 - Beautiful glass-morphism login/signup page
 - Email/password authentication via Supabase
 - Auto-redirect based on auth state
 - Dark mode first design with purple/pink gradients
 
 #### 2. Onboarding Experience (/onboarding)
+
 - 4-step swipe-based onboarding
 - Smooth animations and transitions
 - Skip option available
@@ -18,6 +20,7 @@
 - Updates user profile on completion
 
 #### 3. Home Screen (/home)
+
 - **Balance Card**
   - Large, prominent total balance display
   - Income/Expense breakdown with color coding
@@ -42,6 +45,7 @@
   - Active state highlighting
 
 #### 4. Add Expense Modal
+
 - Bottom sheet design
 - Large, easy-to-use amount input
 - 8 pre-defined emoji categories
@@ -50,6 +54,7 @@
 - Smooth slide-up animation
 
 #### 5. Design System
+
 - Dark mode as default
 - Custom CSS variables for theming
 - Glass-morphism utility classes
@@ -109,6 +114,7 @@ types/
 ## 🚀 Getting Started
 
 1. **Install dependencies**
+
    ```bash
    npm install
    ```
@@ -118,6 +124,7 @@ types/
    - Create `.env.local` with your credentials
 
 3. **Run development server**
+
    ```bash
    npm run dev
    ```

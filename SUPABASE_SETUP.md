@@ -1,6 +1,6 @@
 # Supabase Setup Guide
 
-This guide will help you set up Supabase for the Flux Financial GenZ app.
+This guide will help you set up Supabase for the Rizqly GenZ app.
 
 ## Step 1: Create a Supabase Project
 
@@ -242,20 +242,24 @@ After completing the setup, you can test your connection by:
 ## Troubleshooting
 
 ### "Invalid API key" error
+
 - Double-check your `.env.local` file has the correct `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - Restart your development server after changing environment variables
 
 ### "Row Level Security" errors
+
 - Make sure you ran all the SQL in Step 4
 - Check that RLS policies are enabled on all tables
 
 ### Tables not found
+
 - Verify the SQL schema was executed successfully in the SQL Editor
 - Check the Table Editor in Supabase to see if tables exist
 
 ## Next Steps
 
 Once your Supabase is set up:
+
 - Start adding authentication to your app
 - Create your first expense
 - Test the database queries

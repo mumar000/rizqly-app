@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-Get Flux Financial running in 5 minutes!
+Get Rizqly running in 5 minutes!
 
 ## Step 1: Install Dependencies (30 seconds)
 
@@ -54,6 +54,7 @@ Open [http://localhost:3000](http://localhost:3000)
 ## Current Limitations
 
 The app is in Phase 1 development:
+
 - ✅ All UI components are built and working
 - ✅ Authentication is fully functional
 - ⚠️ Expense modal doesn't save to database yet (coming next!)
@@ -63,13 +64,16 @@ The app is in Phase 1 development:
 ## Troubleshooting
 
 **"Missing Supabase environment variables"**
+
 - Make sure `.env.local` exists in project root
 - Restart the dev server after creating .env.local
 
 **Build fails**
+
 - Set placeholder env vars: `NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder npm run build`
 
 **Can't sign up/login**
+
 - Check Supabase project is running
 - Verify env variables are correct
 - Check browser console for errors
@@ -77,6 +81,7 @@ The app is in Phase 1 development:
 ## Next Steps
 
 Once you're up and running:
+
 1. Read `README_DEV.md` for full development guide
 2. Check `PROJECT_STATUS.md` for what's completed
 3. Review `SUPABASE_SETUP.md` for detailed database info
