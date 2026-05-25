@@ -22,6 +22,7 @@ import { FinanceAnalyticsChart } from "@/components/mobile/FinanceAnalyticsChart
 import { DailyRizqCard } from "@/components/mobile/DailyRizqCard";
 import { PeriodSelector } from "@/components/mobile/PeriodSelector";
 import { BankCarousel } from "@/components/mobile/BankCarousel";
+import { TransactionDetailModal } from "@/components/mobile/TransactionDetailModal";
 import {
   formatPKR,
   CATEGORY_EMOJIS,
@@ -34,6 +35,7 @@ interface SwipeableTransactionRowProps {
   transaction: Transaction;
   index: number;
   onDelete: (id: string) => void;
+  onOpen: (transaction: Transaction) => void;
   formatDate: (s: string) => string;
 }
 
@@ -41,6 +43,7 @@ function SwipeableTransactionRow({
   transaction,
   index,
   onDelete,
+  onOpen,
   formatDate,
 }: SwipeableTransactionRowProps) {
   const x = useMotionValue(0);
@@ -101,6 +104,7 @@ function SwipeableTransactionRow({
         dragConstraints={{ left: -120, right: 0 }}
         dragElastic={{ left: 0.15, right: 0 }}
         onDragEnd={handleDragEnd}
+        onTap={() => onOpen(transaction)}
         style={{
           x,
           opacity: cardOpacity,
@@ -179,6 +183,8 @@ export default function BudgetPage() {
   const [activePeriod, setActivePeriod] = useState<Period>({
     type: "this_month",
   });
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<Transaction | null>(null);
   const periodMeta = usePeriodFilter(activePeriod);
   const {
     data: transactions = [],
@@ -570,6 +576,7 @@ export default function BudgetPage() {
                       transaction={transaction}
                       index={i}
                       onDelete={(id) => deleteTransaction.mutate(id)}
+                      onOpen={(t) => setSelectedTransaction(t)}
                       formatDate={formatDate}
                     />
                   ))}
@@ -593,6 +600,12 @@ export default function BudgetPage() {
           </div>
         </div>
       </div>
+
+      <TransactionDetailModal
+        transaction={selectedTransaction}
+        onClose={() => setSelectedTransaction(null)}
+        onDelete={(id) => deleteTransaction.mutate(id)}
+      />
     </div>
   );
 }
