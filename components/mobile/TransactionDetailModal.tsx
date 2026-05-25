@@ -147,11 +147,14 @@ export function TransactionDetailModal({
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.08 }}
-                className={`mt-3 text-[40px] leading-none font-extrabold tracking-tight ${
-                  isIncome ? "text-[#86EFAC]" : "text-white"
-                }`}
+                className="mt-3 text-[40px] leading-none font-extrabold tracking-tight"
+                style={{
+                  color: isIncome ? "#39FF14" : "#FF7A8A",
+                  textShadow: isIncome
+                    ? "0 0 24px rgba(57,255,20,0.35)"
+                    : "0 0 24px rgba(255,122,138,0.25)",
+                }}
               >
-                {isIncome ? "+" : "-"}
                 {formatPKR(Number(transaction.amount))}
               </motion.p>
             </div>

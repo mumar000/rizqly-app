@@ -90,13 +90,13 @@ export function SelectionCalcBar({
               <div className="flex gap-3 flex-1 min-w-0">
                 <Stat
                   label="In"
-                  value={`+${formatPKR(stats.totalIncome)}`}
-                  color="#86EFAC"
+                  value={formatPKR(stats.totalIncome)}
+                  color="#39FF14"
                 />
                 <Stat
                   label="Out"
-                  value={`-${formatPKR(stats.totalExpense)}`}
-                  color="#FF8B8B"
+                  value={formatPKR(stats.totalExpense)}
+                  color="#FF7A8A"
                 />
               </div>
               <div className="text-right">
@@ -106,10 +106,9 @@ export function SelectionCalcBar({
                 <p
                   className="text-lg font-extrabold leading-none mt-0.5"
                   style={{
-                    color: stats.net >= 0 ? "#86EFAC" : "#FF8B8B",
+                    color: stats.net >= 0 ? "#39FF14" : "#FF7A8A",
                   }}
                 >
-                  {stats.net >= 0 ? "+" : "-"}
                   {formatPKR(Math.abs(stats.net))}
                 </p>
               </div>
@@ -120,13 +119,13 @@ export function SelectionCalcBar({
               <motion.div
                 animate={{ flex: stats.incomeRatio }}
                 transition={{ duration: 0.18 }}
-                style={{ background: "#86EFAC", flex: stats.incomeRatio }}
+                style={{ background: "#39FF14", flex: stats.incomeRatio }}
               />
               <motion.div
                 animate={{ flex: 1 - stats.incomeRatio }}
                 transition={{ duration: 0.18 }}
                 style={{
-                  background: "#FF8B8B",
+                  background: "#FF7A8A",
                   flex: 1 - stats.incomeRatio,
                 }}
               />

@@ -138,10 +138,9 @@ export function SavedGroupsSheet({
                       <span
                         className="text-sm font-extrabold flex-shrink-0"
                         style={{
-                          color: g.net >= 0 ? "#86EFAC" : "#FF8B8B",
+                          color: g.net >= 0 ? "#39FF14" : "#FF7A8A",
                         }}
                       >
-                        {g.net >= 0 ? "+" : "-"}
                         {formatPKR(Math.abs(g.net))}
                       </span>
                     </button>

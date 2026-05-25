@@ -186,9 +186,9 @@ function SwipeableTransactionRowImpl({
           </div>
         </div>
         <span
-          className={`font-extrabold text-sm flex-shrink-0 ml-2 ${isIncome ? "text-[#86EFAC]" : "text-white"}`}
+          className="font-extrabold text-sm flex-shrink-0 ml-2"
+          style={{ color: isIncome ? "#39FF14" : "#FF7A8A" }}
         >
-          {isIncome ? "+" : "-"}
           {formatPKR(Number(transaction.amount))}
         </span>
       </motion.div>
