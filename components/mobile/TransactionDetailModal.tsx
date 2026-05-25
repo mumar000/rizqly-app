@@ -17,22 +17,22 @@ interface TransactionDetailModalProps {
   onDelete?: (id: string) => void;
 }
 
-const SOURCE_LABEL: Record<Transaction["sourceType"], string> = {
-  manual: "Manual entry",
-  natural_language: "Natural language",
-  receipt_scan: "Receipt scan",
-  system: "System",
-};
-
-function formatFullDate(input: string) {
+function formatDay(input: string) {
   if (!input) return "—";
   const d = new Date(input);
-  if (Number.isNaN(d.getTime())) return input;
-  return d.toLocaleString("en-PK", {
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-PK", {
     weekday: "short",
-    year: "numeric",
     month: "short",
     day: "numeric",
+  });
+}
+
+function formatTime(input: string) {
+  if (!input) return "—";
+  const d = new Date(input);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleTimeString("en-PK", {
     hour: "numeric",
     minute: "2-digit",
   });
@@ -47,9 +47,9 @@ function relativeFromNow(input: string) {
   const h = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
   if (m < 1) return "Just now";
-  if (m < 60) return `${m} min ago`;
-  if (h < 24) return `${h} hr ago`;
-  if (days < 30) return `${days} day${days === 1 ? "" : "s"} ago`;
+  if (m < 60) return `${m}m ago`;
+  if (h < 24) return `${h}h ago`;
+  if (days < 30) return `${days}d ago`;
   return "";
 }
 
@@ -71,8 +71,8 @@ export function TransactionDetailModal({
   const color = transaction
     ? isIncome
       ? INCOME_COLORS[transaction.category] || "#22C55E"
-      : CATEGORY_COLORS[transaction.category] || "#8884d8"
-    : "#8884d8";
+      : CATEGORY_COLORS[transaction.category] || "#A78BFA"
+    : "#A78BFA";
   const emoji = transaction
     ? isIncome
       ? INCOME_EMOJIS[transaction.category] || "✨"
@@ -103,85 +103,90 @@ export function TransactionDetailModal({
             onDragEnd={(_, info) => {
               if (info.offset.y > 120 || info.velocity.y > 500) onClose();
             }}
-            className="fixed inset-x-0 bottom-0 z-50 rounded-t-[32px] px-6 pb-10 pt-3"
+            className="fixed inset-x-0 bottom-0 z-50 rounded-t-[32px] px-5 pb-8 pt-3 overflow-hidden"
             style={{
-              background: "#1A1B2E",
+              background: "#15161F",
               borderTop: "1px solid rgba(255,255,255,0.06)",
               maxHeight: "92vh",
-              overflowY: "auto",
             }}
           >
+            {/* Glow */}
+            <div
+              className="pointer-events-none absolute -top-32 left-1/2 -translate-x-1/2 w-[420px] h-[280px] rounded-full blur-3xl opacity-50"
+              style={{ background: `${color}55` }}
+            />
+
             {/* Drag handle */}
-            <div className="flex justify-center pb-4">
+            <div className="relative flex justify-center pb-3">
               <div className="h-1.5 w-12 rounded-full bg-white/15" />
             </div>
 
-            {/* Header */}
-            <div className="flex items-start gap-4">
-              <div
-                className="w-16 h-16 rounded-[20px] flex items-center justify-center text-3xl flex-shrink-0"
-                style={{ background: `${color}22` }}
+            {/* Hero */}
+            <div className="relative text-center pt-2 pb-5">
+              <motion.div
+                initial={{ scale: 0.6, rotate: -8 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: "spring", stiffness: 320, damping: 18 }}
+                className="mx-auto w-20 h-20 rounded-[24px] flex items-center justify-center text-4xl"
+                style={{
+                  background: `${color}22`,
+                  boxShadow: `0 12px 40px -10px ${color}80`,
+                }}
               >
                 {emoji}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-extrabold tracking-widest uppercase text-white/40">
-                  {isIncome ? "Income" : "Expense"} · {transaction.category}
-                </p>
-                <h2 className="mt-0.5 text-xl font-extrabold text-white break-words">
-                  {transaction.description || "Untitled"}
-                </h2>
-                <p
-                  className={`mt-2 text-3xl font-extrabold ${
-                    isIncome ? "text-[#86EFAC]" : "text-white"
-                  }`}
-                >
-                  {isIncome ? "+" : "-"}
-                  {formatPKR(Number(transaction.amount))}
-                </p>
-              </div>
+              </motion.div>
+
+              <p className="mt-4 text-[10px] font-extrabold tracking-[0.2em] uppercase text-white/40">
+                {isIncome ? "Money in" : "Money out"}
+              </p>
+              <h2 className="mt-1 text-xl font-extrabold text-white break-words px-4">
+                {transaction.description || "Untitled"}
+              </h2>
+
+              <motion.p
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.08 }}
+                className={`mt-3 text-[40px] leading-none font-extrabold tracking-tight ${
+                  isIncome ? "text-[#86EFAC]" : "text-white"
+                }`}
+              >
+                {isIncome ? "+" : "-"}
+                {formatPKR(Number(transaction.amount))}
+              </motion.p>
             </div>
 
-            {/* Detail grid */}
-            <div className="mt-7 space-y-2">
-              <DetailRow label="Bank" value={transaction.bank_account || "—"} />
-              <DetailRow
+            {/* Grid */}
+            <div className="relative grid grid-cols-2 gap-3">
+              <Tile
+                label="Category"
+                value={transaction.category}
+                accent={color}
+                icon={emoji}
+              />
+              <Tile
+                label="Bank"
+                value={transaction.bank_account || "—"}
+                accent="#60A5FA"
+                icon="🏦"
+              />
+              <Tile
                 label="Date"
-                value={formatFullDate(transaction.date || transaction.created_at)}
+                value={formatDay(transaction.date || transaction.created_at)}
+                accent="#F472B6"
+                icon="📅"
+              />
+              <Tile
+                label="Time"
+                value={formatTime(transaction.created_at)}
                 hint={relativeFromNow(transaction.created_at)}
+                accent="#FBBF24"
+                icon="⏰"
               />
-              <DetailRow
-                label="Logged"
-                value={formatFullDate(transaction.created_at)}
-              />
-              <DetailRow
-                label="Source"
-                value={SOURCE_LABEL[transaction.sourceType] ?? transaction.sourceType}
-              />
-              {transaction.rawInput && (
-                <DetailRow
-                  label="You typed"
-                  value={`"${transaction.rawInput}"`}
-                />
-              )}
-              {transaction.scanStatus && transaction.scanStatus !== "none" && (
-                <DetailRow
-                  label="Scan"
-                  value={`${transaction.scanStatus}${
-                    transaction.scanConfidence != null
-                      ? ` · ${Math.round(transaction.scanConfidence * 100)}%`
-                      : ""
-                  }`}
-                />
-              )}
-              {transaction.relatedGoalId && (
-                <DetailRow label="Linked goal" value={transaction.relatedGoalId} />
-              )}
-              <DetailRow label="ID" value={transaction.id} mono />
             </div>
 
             {/* Actions */}
-            <div className="mt-7 flex gap-3">
+            <div className="relative mt-6 flex gap-3">
               <button
                 onClick={onClose}
                 className="flex-1 rounded-2xl py-3.5 font-extrabold text-white text-sm"
@@ -216,38 +221,44 @@ export function TransactionDetailModal({
   );
 }
 
-function DetailRow({
+function Tile({
   label,
   value,
   hint,
-  mono = false,
+  accent,
+  icon,
 }: {
   label: string;
   value: string;
   hint?: string;
-  mono?: boolean;
+  accent: string;
+  icon: string;
 }) {
   return (
-    <div
-      className="flex items-start justify-between gap-4 rounded-[14px] px-4 py-3"
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-[20px] p-4 flex flex-col gap-2"
       style={{
-        background: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255,255,255,0.05)",
+        background: "rgba(255,255,255,0.035)",
+        border: "1px solid rgba(255,255,255,0.06)",
       }}
     >
-      <span className="text-xs font-bold uppercase tracking-wider text-white/40 pt-0.5">
-        {label}
-      </span>
-      <div className="text-right min-w-0 flex-1">
-        <p
-          className={`text-sm font-bold text-white break-words ${
-            mono ? "font-mono text-xs text-white/70" : ""
-          }`}
+      <div className="flex items-center gap-2">
+        <div
+          className="w-7 h-7 rounded-[10px] flex items-center justify-center text-sm"
+          style={{ background: `${accent}22` }}
         >
-          {value}
-        </p>
+          {icon}
+        </div>
+        <span className="text-[10px] font-extrabold uppercase tracking-wider text-white/40">
+          {label}
+        </span>
+      </div>
+      <div>
+        <p className="text-sm font-extrabold text-white truncate">{value}</p>
         {hint && <p className="text-[11px] text-white/35 mt-0.5">{hint}</p>}
       </div>
-    </div>
+    </motion.div>
   );
 }
