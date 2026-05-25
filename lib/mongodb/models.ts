@@ -296,6 +296,47 @@ export const Transaction =
   mongoose.models.Transaction ||
   mongoose.model<ITransaction>("Transaction", TransactionSchema);
 
+// --- Bill ---
+export interface IBill extends Document {
+  _id: mongoose.Types.ObjectId;
+  userId: string;
+  name: string;
+  amount: number;
+  category: string;
+  bank_account: string;
+  frequency: "one_off" | "weekly" | "monthly" | "yearly";
+  nextDueDate: string; // YYYY-MM-DD
+  reminderEnabled: boolean;
+  lastPaidAt: string | null; // YYYY-MM-DD
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const BillSchema = new Schema<IBill>(
+  {
+    userId: { type: String, required: true },
+    name: { type: String, required: true },
+    amount: { type: Number, required: true },
+    category: { type: String, required: true, default: "Bills" },
+    bank_account: { type: String, required: true },
+    frequency: {
+      type: String,
+      required: true,
+      enum: ["one_off", "weekly", "monthly", "yearly"],
+      default: "monthly",
+    },
+    nextDueDate: { type: String, required: true },
+    reminderEnabled: { type: Boolean, default: true },
+    lastPaidAt: { type: String, default: null },
+  },
+  { timestamps: true }
+);
+
+BillSchema.index({ userId: 1, nextDueDate: 1 });
+
+export const Bill =
+  mongoose.models.Bill || mongoose.model<IBill>("Bill", BillSchema);
+
 // --- ComparisonItem ---
 export interface IComparisonItem extends Document {
   _id: mongoose.Types.ObjectId;

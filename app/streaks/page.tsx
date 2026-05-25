@@ -7,6 +7,11 @@ import { useTransactions } from "@/hooks/queries/useTransactions";
 import { CalendarHeatmap } from "@/components/mobile/CalendarHeatmap";
 import { DayDetailSheet } from "@/components/mobile/DayDetailSheet";
 import { TransactionDetailModal } from "@/components/mobile/TransactionDetailModal";
+import { BillsTimeline } from "@/components/mobile/BillsTimeline";
+import { AddBillSheet } from "@/components/mobile/AddBillSheet";
+import { BillDetailSheet } from "@/components/mobile/BillDetailSheet";
+import { useBills } from "@/hooks/queries/useBills";
+import type { Bill } from "@/services/bill.service";
 import type { Transaction } from "@/services/transaction.service";
 
 function monthBounds(month: Date) {
@@ -32,6 +37,10 @@ export default function CalendarPage() {
   const [openTransaction, setOpenTransaction] = useState<Transaction | null>(
     null,
   );
+  const [addBillOpen, setAddBillOpen] = useState(false);
+  const [openBill, setOpenBill] = useState<Bill | null>(null);
+
+  const { data: bills = [] } = useBills();
 
   const { startDate, endDate } = useMemo(
     () => monthBounds(viewMonth),
@@ -217,82 +226,48 @@ export default function CalendarPage() {
           <h2 className="text-white font-extrabold text-base flex items-center gap-2">
             <span>📆</span> Coming up
           </h2>
-          <span
-            className="text-[9px] font-extrabold uppercase tracking-[0.18em] px-2 py-1 rounded-full"
+          <button
+            onClick={() => setAddBillOpen(true)}
+            className="text-[10px] font-extrabold uppercase tracking-[0.18em] px-3 py-1.5 rounded-full inline-flex items-center gap-1"
             style={{
               color: "#CCFF00",
               background: "rgba(204,255,0,0.12)",
               border: "1px solid rgba(204,255,0,0.25)",
             }}
           >
-            Soon
-          </span>
+            + Add
+          </button>
         </div>
 
-        {/* Teaser preview: blurred fake bills behind a glass overlay */}
-        <div
-          className="relative rounded-[24px] overflow-hidden"
-          style={{
-            background: "rgba(255,255,255,0.025)",
-            border: "1px solid rgba(255,255,255,0.06)",
-          }}
-        >
+        {bills.length === 0 ? (
           <div
-            aria-hidden
-            className="absolute inset-0 p-4 space-y-2 select-none pointer-events-none"
-            style={{ filter: "blur(4px)", opacity: 0.55 }}
+            className="relative rounded-[24px] p-8 text-center"
+            style={{
+              background: "rgba(255,255,255,0.025)",
+              border: "1px dashed rgba(255,255,255,0.08)",
+            }}
           >
-            {[
-              { e: "🏠", n: "Rent", d: "in 2d", a: "45,000" },
-              { e: "🎬", n: "Netflix", d: "in 5d", a: "1,200" },
-              { e: "🌐", n: "Internet", d: "in 12d", a: "3,500" },
-            ].map((b) => (
-              <div
-                key={b.n}
-                className="flex items-center justify-between rounded-[14px] p-3"
-                style={{ background: "rgba(255,255,255,0.04)" }}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-[12px] bg-white/10 flex items-center justify-center text-lg">
-                    {b.e}
-                  </div>
-                  <div>
-                    <p className="text-white font-extrabold text-sm">{b.n}</p>
-                    <p className="text-white/40 text-xs">{b.d}</p>
-                  </div>
-                </div>
-                <span
-                  className="font-extrabold text-sm"
-                  style={{ color: "#FF7A8A" }}
-                >
-                  {b.a}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          <div className="relative p-8 text-center backdrop-blur-[2px]">
             <div className="text-4xl mb-2">🧾</div>
             <p className="text-white font-extrabold text-sm">
               Never get blindsided by a bill
             </p>
-            <p className="text-white/45 text-xs mt-1.5 px-6 leading-relaxed">
-              Add rent, subs and recurring charges — we’ll show what’s coming
-              and ping you before it hits.
+            <p className="text-white/45 text-xs mt-1.5 px-4 leading-relaxed">
+              Track rent, subs and recurring charges. We’ll surface what’s next.
             </p>
             <button
-              disabled
+              onClick={() => setAddBillOpen(true)}
               className="mt-4 rounded-full px-4 py-2 text-xs font-extrabold inline-flex items-center gap-1.5"
               style={{
-                background: "rgba(204,255,0,0.10)",
-                border: "1px solid rgba(204,255,0,0.25)",
-                color: "rgba(204,255,0,0.7)",
+                background: "#CCFF00",
+                color: "#000",
               }}
             >
-              <span>🔒</span> Unlocking soon
+              + Add your first bill
             </button>
           </div>
-        </div>
+        ) : (
+          <BillsTimeline bills={bills} onOpen={(b) => setOpenBill(b)} />
+        )}
       </section>
 
       <DayDetailSheet
@@ -313,6 +288,10 @@ export default function CalendarPage() {
           />
         )}
       </AnimatePresence>
+
+      <AddBillSheet open={addBillOpen} onClose={() => setAddBillOpen(false)} />
+
+      <BillDetailSheet bill={openBill} onClose={() => setOpenBill(null)} />
     </div>
   );
 }
