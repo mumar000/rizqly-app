@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   motion,
   AnimatePresence,
@@ -23,6 +23,11 @@ import { DailyRizqCard } from "@/components/mobile/DailyRizqCard";
 import { PeriodSelector } from "@/components/mobile/PeriodSelector";
 import { BankCarousel } from "@/components/mobile/BankCarousel";
 import { TransactionDetailModal } from "@/components/mobile/TransactionDetailModal";
+import { SelectionCalcBar } from "@/components/mobile/SelectionCalcBar";
+import { SavedGroupsSheet } from "@/components/mobile/SavedGroupsSheet";
+import { useTransactionSelection } from "@/hooks/useTransactionSelection";
+import { useSavedGroups } from "@/hooks/useSavedGroups";
+import { useLongPress } from "@/hooks/useLongPress";
 import {
   formatPKR,
   CATEGORY_EMOJIS,
@@ -34,16 +39,24 @@ import {
 interface SwipeableTransactionRowProps {
   transaction: Transaction;
   index: number;
+  selected: boolean;
+  selectionMode: boolean;
   onDelete: (id: string) => void;
   onOpen: (transaction: Transaction) => void;
+  onLongPress: (id: string) => void;
+  onToggleSelect: (id: string) => void;
   formatDate: (s: string) => string;
 }
 
-function SwipeableTransactionRow({
+function SwipeableTransactionRowImpl({
   transaction,
   index,
+  selected,
+  selectionMode,
   onDelete,
   onOpen,
+  onLongPress,
+  onToggleSelect,
   formatDate,
 }: SwipeableTransactionRowProps) {
   const x = useMotionValue(0);
@@ -58,6 +71,11 @@ function SwipeableTransactionRow({
     ? INCOME_EMOJIS[transaction.category] || "✨"
     : CATEGORY_EMOJIS[transaction.category] || "📦";
 
+  const { handlers: longPressHandlers, didFireRef } = useLongPress({
+    onLongPress: () => onLongPress(transaction.id),
+    enabled: !selectionMode,
+  });
+
   const handleDragEnd = (_: unknown, info: { offset: { x: number } }) => {
     if (info.offset.x < -80) {
       animate(x, -500, { duration: 0.25, ease: "easeIn" }).then(() => {
@@ -68,72 +86,107 @@ function SwipeableTransactionRow({
     }
   };
 
+  const handleTap = () => {
+    // Suppress the tap that follows a long-press release.
+    if (didFireRef.current) {
+      didFireRef.current = false;
+      return;
+    }
+    if (selectionMode) onToggleSelect(transaction.id);
+    else onOpen(transaction);
+  };
+
   return (
     <motion.div
-      key={transaction.id}
       layout
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-      transition={{ delay: index * 0.04 }}
+      transition={{ delay: Math.min(index, 8) * 0.03 }}
       className="relative overflow-hidden rounded-[16px]"
     >
-      {/* Red delete background */}
-      <motion.div
-        style={{
-          opacity: deleteOpacity,
-          background:
-            "linear-gradient(90deg, transparent 0%, rgba(255,59,48,0.15) 30%, rgba(255,59,48,0.95) 100%)",
-        }}
-        className="absolute inset-0 flex items-center justify-end pr-5 rounded-[16px]"
-      >
+      {/* Red delete background (only visible while swiping) */}
+      {!selectionMode && (
         <motion.div
-          style={{ scale: deleteScale }}
-          className="flex flex-col items-center gap-1"
+          style={{
+            opacity: deleteOpacity,
+            background:
+              "linear-gradient(90deg, transparent 0%, rgba(255,59,48,0.15) 30%, rgba(255,59,48,0.95) 100%)",
+          }}
+          className="absolute inset-0 flex items-center justify-end pr-5 rounded-[16px]"
         >
-          <span className="text-2xl">🗑️</span>
-          <span className="text-white text-[10px] font-bold tracking-wide">
-            DELETE
-          </span>
+          <motion.div
+            style={{ scale: deleteScale }}
+            className="flex flex-col items-center gap-1"
+          >
+            <span className="text-2xl">🗑️</span>
+            <span className="text-white text-[10px] font-bold tracking-wide">
+              DELETE
+            </span>
+          </motion.div>
         </motion.div>
-      </motion.div>
+      )}
 
-      {/* Swipeable card */}
+      {/* Swipeable / selectable card */}
       <motion.div
-        drag="x"
+        {...longPressHandlers}
+        drag={selectionMode ? false : "x"}
         dragConstraints={{ left: -120, right: 0 }}
         dragElastic={{ left: 0.15, right: 0 }}
         onDragEnd={handleDragEnd}
-        onTap={() => onOpen(transaction)}
+        onTap={handleTap}
+        animate={{ scale: selected ? 0.97 : 1 }}
+        transition={{ duration: 0.12 }}
         style={{
-          x,
-          opacity: cardOpacity,
-          background: "rgba(255,255,255,0.04)",
-          border: "1px solid rgba(255,255,255,0.07)",
+          x: selectionMode ? 0 : x,
+          opacity: selectionMode ? 1 : cardOpacity,
+          background: selected
+            ? "rgba(204,255,0,0.08)"
+            : "rgba(255,255,255,0.04)",
+          border: selected
+            ? "1px solid rgba(204,255,0,0.45)"
+            : "1px solid rgba(255,255,255,0.07)",
           borderRadius: "16px",
+          willChange: "transform",
         }}
-        className="relative p-4 flex items-center justify-between cursor-grab active:cursor-grabbing"
+        className="relative p-4 flex items-center justify-between cursor-pointer"
       >
-        <div className="flex items-center gap-3">
-          <div
-            className="w-11 h-11 rounded-[14px] flex items-center justify-center text-xl flex-shrink-0"
-            style={{ background: `${categoryColor}18` }}
-          >
-            {categoryEmoji}
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="relative flex-shrink-0">
+            <div
+              className="w-11 h-11 rounded-[14px] flex items-center justify-center text-xl"
+              style={{ background: `${categoryColor}18` }}
+            >
+              {categoryEmoji}
+            </div>
+            {selectionMode && (
+              <div
+                className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-extrabold"
+                style={{
+                  background: selected ? "#CCFF00" : "rgba(0,0,0,0.6)",
+                  color: selected ? "#000" : "#fff",
+                  border: selected
+                    ? "1.5px solid #15161F"
+                    : "1.5px solid rgba(255,255,255,0.15)",
+                }}
+              >
+                {selected ? "✓" : ""}
+              </div>
+            )}
           </div>
-          <div>
-            <p className="font-bold text-white text-sm">
+          <div className="min-w-0">
+            <p className="font-bold text-white text-sm truncate">
               {transaction.description}
             </p>
             <div className="flex items-center gap-1.5 text-xs text-white/35 mt-0.5">
-              <span>{transaction.bank_account}</span>
+              <span className="truncate">{transaction.bank_account}</span>
               <span>·</span>
               <span>{formatDate(transaction.created_at)}</span>
             </div>
           </div>
         </div>
         <span
-          className={`font-extrabold text-sm flex-shrink-0 ${isIncome ? "text-[#86EFAC]" : "text-white"}`}
+          className={`font-extrabold text-sm flex-shrink-0 ml-2 ${isIncome ? "text-[#86EFAC]" : "text-white"}`}
         >
           {isIncome ? "+" : "-"}
           {formatPKR(Number(transaction.amount))}
@@ -142,6 +195,8 @@ function SwipeableTransactionRow({
     </motion.div>
   );
 }
+
+const SwipeableTransactionRow = React.memo(SwipeableTransactionRowImpl);
 
 function DeltaPill({
   current,
@@ -185,6 +240,7 @@ export default function BudgetPage() {
   });
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
+  const [groupsSheetOpen, setGroupsSheetOpen] = useState(false);
   const periodMeta = usePeriodFilter(activePeriod);
   const {
     data: transactions = [],
@@ -197,6 +253,45 @@ export default function BudgetPage() {
   const { data: priorStats } = useTransactionStats(periodMeta.priorFilters);
   const { data: banks = [] } = useBanks();
   const deleteTransaction = useDeleteTransaction();
+
+  const selection = useTransactionSelection(transactions);
+  const savedGroups = useSavedGroups();
+
+  // Stable callbacks so memoized rows don't re-render needlessly.
+  const handleOpenDetail = useCallback(
+    (t: Transaction) => setSelectedTransaction(t),
+    [],
+  );
+  const handleDeleteOne = useCallback(
+    (id: string) => deleteTransaction.mutate(id),
+    [deleteTransaction],
+  );
+  const handleLongPress = selection.select;
+  const handleToggleSelect = selection.toggle;
+  const handleCancelSelection = selection.clear;
+
+  const handleSaveGroup = useCallback(
+    (name: string) => {
+      const { selectedTransactions, totalIncome, totalExpense, net } =
+        selection.stats;
+      if (selectedTransactions.length === 0) return;
+      savedGroups.save({
+        name,
+        transactionIds: selectedTransactions.map((t) => t.id),
+        total: totalIncome + totalExpense,
+        net,
+      });
+      selection.clear();
+    },
+    [selection, savedGroups],
+  );
+
+  const handleDeleteSelection = useCallback(() => {
+    const ids = Array.from(selection.selectedIds);
+    if (ids.length === 0) return;
+    ids.forEach((id) => deleteTransaction.mutate(id));
+    selection.clear();
+  }, [selection, deleteTransaction]);
 
   // Session is pre-fetched server-side in layout, so status is "authenticated"
   // on first render. isLoading only waits for the expenses query.
@@ -575,8 +670,12 @@ export default function BudgetPage() {
                       key={transaction.id}
                       transaction={transaction}
                       index={i}
-                      onDelete={(id) => deleteTransaction.mutate(id)}
-                      onOpen={(t) => setSelectedTransaction(t)}
+                      selected={selection.selectedIds.has(transaction.id)}
+                      selectionMode={selection.isSelectionMode}
+                      onDelete={handleDeleteOne}
+                      onOpen={handleOpenDetail}
+                      onLongPress={handleLongPress}
+                      onToggleSelect={handleToggleSelect}
                       formatDate={formatDate}
                     />
                   ))}
@@ -604,8 +703,44 @@ export default function BudgetPage() {
       <TransactionDetailModal
         transaction={selectedTransaction}
         onClose={() => setSelectedTransaction(null)}
-        onDelete={(id) => deleteTransaction.mutate(id)}
+        onDelete={handleDeleteOne}
       />
+
+      <SelectionCalcBar
+        visible={selection.isSelectionMode}
+        stats={selection.stats}
+        onCancel={handleCancelSelection}
+        onSaveGroup={handleSaveGroup}
+        onDeleteAll={handleDeleteSelection}
+      />
+
+      <SavedGroupsSheet
+        open={groupsSheetOpen}
+        groups={savedGroups.groups}
+        onClose={() => setGroupsSheetOpen(false)}
+        onOpenGroup={(g) => {
+          selection.replace(g.transactionIds);
+          setGroupsSheetOpen(false);
+        }}
+        onDeleteGroup={savedGroups.remove}
+      />
+
+      {savedGroups.groups.length > 0 && !selection.isSelectionMode && (
+        <button
+          onClick={() => setGroupsSheetOpen(true)}
+          className="fixed bottom-24 left-4 z-30 rounded-full px-3.5 py-2 flex items-center gap-1.5 text-xs font-extrabold text-white backdrop-blur-xl"
+          style={{
+            background: "rgba(20,21,32,0.85)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            boxShadow: "0 10px 30px -10px rgba(0,0,0,0.6)",
+          }}
+        >
+          🧮 Groups
+          <span className="text-[10px] text-white/40">
+            {savedGroups.groups.length}
+          </span>
+        </button>
+      )}
     </div>
   );
 }
