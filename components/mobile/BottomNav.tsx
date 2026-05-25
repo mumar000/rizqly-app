@@ -49,25 +49,27 @@ function SettingsIcon({ filled }: { filled: boolean }) {
   );
 }
 
-function StreaksIcon({ filled }: { filled: boolean }) {
+function CalendarIcon({ filled }: { filled: boolean }) {
   const c = filled ? "#CCFF00" : "rgba(255,255,255,0.4)";
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M13 2L3 14H12L11 22L21 10H12L13 2Z"
-        fill={filled ? "#CCFF00" : "none"}
-        stroke={c}
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+      <rect
+        x="3" y="5" width="18" height="16" rx="3"
+        stroke={c} strokeWidth="1.8"
+        fill={filled ? "rgba(204,255,0,0.18)" : "none"}
       />
+      <path d="M3 10h18" stroke={c} strokeWidth="1.8" />
+      <path d="M8 3v4M16 3v4" stroke={c} strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="8" cy="15" r="1.2" fill={c} />
+      <circle cx="12" cy="15" r="1.2" fill={c} />
+      <circle cx="16" cy="15" r="1.2" fill={c} />
     </svg>
   );
 }
 
 const NAV_ITEMS = [
   { label: "Home",     href: "/dashboard", Icon: HomeIcon },
-  { label: "Streaks",  href: "/streaks",   Icon: StreaksIcon },
+  { label: "Calendar", href: "/streaks",   Icon: CalendarIcon },
   { label: "Goals",    href: "/goals",    Icon: GoalsIcon },
   { label: "Settings", href: "/settings", Icon: SettingsIcon },
 ];
