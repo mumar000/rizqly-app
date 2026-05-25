@@ -10,7 +10,10 @@ import { TransactionDetailModal } from "@/components/mobile/TransactionDetailMod
 import { BillsTimeline } from "@/components/mobile/BillsTimeline";
 import { AddBillSheet } from "@/components/mobile/AddBillSheet";
 import { BillDetailSheet } from "@/components/mobile/BillDetailSheet";
+import { BillAlertsSheet } from "@/components/mobile/BillAlertsSheet";
 import { useBills } from "@/hooks/queries/useBills";
+import { useDueAlerts } from "@/hooks/useDueAlerts";
+import { formatPKR } from "@/utils/expenseParser";
 import type { Bill } from "@/services/bill.service";
 import type { Transaction } from "@/services/transaction.service";
 
@@ -39,8 +42,10 @@ export default function CalendarPage() {
   );
   const [addBillOpen, setAddBillOpen] = useState(false);
   const [openBill, setOpenBill] = useState<Bill | null>(null);
+  const [alertsOpen, setAlertsOpen] = useState(false);
 
   const { data: bills = [] } = useBills();
+  const dueAlerts = useDueAlerts(bills);
 
   const { startDate, endDate } = useMemo(
     () => monthBounds(viewMonth),
@@ -144,6 +149,11 @@ export default function CalendarPage() {
             </h1>
           </div>
           <div className="flex items-center gap-1.5">
+            <BellButton
+              count={dueAlerts.count}
+              urgent={dueAlerts.hasUrgent}
+              onClick={() => setAlertsOpen(true)}
+            />
             <NavButton onClick={() => shiftMonth(-1)} aria="Previous month">
               ‹
             </NavButton>
@@ -239,6 +249,48 @@ export default function CalendarPage() {
           </button>
         </div>
 
+        {dueAlerts.count > 0 && (
+          <motion.button
+            layout
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setAlertsOpen(true)}
+            className="w-full mb-3 rounded-[18px] p-3.5 flex items-center justify-between text-left"
+            style={{
+              background: dueAlerts.hasUrgent
+                ? "linear-gradient(160deg, rgba(255,122,138,0.18) 0%, rgba(255,122,138,0.06) 100%)"
+                : "linear-gradient(160deg, rgba(251,191,36,0.16) 0%, rgba(255,255,255,0.025) 100%)",
+              border: `1px solid ${
+                dueAlerts.hasUrgent
+                  ? "rgba(255,122,138,0.3)"
+                  : "rgba(251,191,36,0.25)"
+              }`,
+            }}
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="text-xl">{dueAlerts.hasUrgent ? "🚨" : "🔔"}</span>
+              <div className="min-w-0">
+                <p className="text-white font-extrabold text-sm truncate">
+                  {dueAlerts.count} bill{dueAlerts.count === 1 ? "" : "s"} due
+                  soon
+                </p>
+                <p className="text-white/50 text-xs mt-0.5">
+                  Total {formatPKR(dueAlerts.totalAmount)} · tap to review
+                </p>
+              </div>
+            </div>
+            <span
+              className="text-xs font-extrabold"
+              style={{
+                color: dueAlerts.hasUrgent ? "#FF7A8A" : "#FBBF24",
+              }}
+            >
+              →
+            </span>
+          </motion.button>
+        )}
+
         {bills.length === 0 ? (
           <div
             className="relative rounded-[24px] p-8 text-center"
@@ -292,6 +344,16 @@ export default function CalendarPage() {
       <AddBillSheet open={addBillOpen} onClose={() => setAddBillOpen(false)} />
 
       <BillDetailSheet bill={openBill} onClose={() => setOpenBill(null)} />
+
+      <BillAlertsSheet
+        open={alertsOpen}
+        alerts={dueAlerts.alerts}
+        totalAmount={dueAlerts.totalAmount}
+        onClose={() => setAlertsOpen(false)}
+        onSnooze={(id, days) =>
+          days === 0 ? dueAlerts.clearSnooze(id) : dueAlerts.snooze(id, days)
+        }
+      />
     </div>
   );
 }
@@ -321,6 +383,63 @@ function NavButton({
       }}
     >
       {children}
+    </motion.button>
+  );
+}
+
+function BellButton({
+  count,
+  urgent,
+  onClick,
+}: {
+  count: number;
+  urgent: boolean;
+  onClick: () => void;
+}) {
+  const active = count > 0;
+  const dotColor = urgent ? "#FF7A8A" : "#FBBF24";
+  return (
+    <motion.button
+      whileTap={{ scale: 0.88 }}
+      onClick={onClick}
+      aria-label={
+        active ? `${count} bills due soon` : "No bill alerts"
+      }
+      className="relative w-9 h-9 rounded-full flex items-center justify-center"
+      style={{
+        background: active
+          ? "rgba(204,255,0,0.1)"
+          : "rgba(255,255,255,0.05)",
+        border: `1px solid ${
+          active ? "rgba(204,255,0,0.3)" : "rgba(255,255,255,0.08)"
+        }`,
+        color: active ? "#CCFF00" : "#fff",
+      }}
+    >
+      <span className="text-base leading-none">🔔</span>
+      {active && (
+        <motion.span
+          className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full text-[9px] font-extrabold flex items-center justify-center text-white"
+          style={{
+            background: dotColor,
+            border: "2px solid #0F0F11",
+          }}
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: "spring", stiffness: 480, damping: 22 }}
+        >
+          {count > 9 ? "9+" : count}
+        </motion.span>
+      )}
+      {urgent && (
+        <motion.span
+          aria-hidden
+          className="absolute inset-0 rounded-full pointer-events-none"
+          animate={{ opacity: [0.55, 0.1, 0.55] }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+          style={{ boxShadow: `0 0 0 2px ${dotColor}55` }}
+        />
+      )}
     </motion.button>
   );
 }
