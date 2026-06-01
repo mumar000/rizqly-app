@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import dbConnect from "@/lib/mongodb/mongoose";
 import { Bank, Bill, Transaction } from "@/lib/mongodb/models";
-import { advanceDueDate } from "@/services/bill.service";
+import { advanceDueDate, isPaidForCurrentCycle } from "@/services/bill.service";
 
 function formatBill(doc: Record<string, unknown>) {
   const out = { ...doc };
@@ -40,6 +40,20 @@ export async function POST(
     const bill = await Bill.findOne({ _id: id, userId: session.user.id });
     if (!bill) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    // Idempotency: never double-charge for the same cycle.
+    if (isPaidForCurrentCycle(bill)) {
+      return NextResponse.json(
+        {
+          error:
+            bill.frequency === "one_off"
+              ? "This bill has already been paid"
+              : "Already paid this cycle",
+          code: "ALREADY_PAID",
+        },
+        { status: 409 },
+      );
     }
 
     const today = new Date().toISOString().split("T")[0];

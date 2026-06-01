@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   daysUntil,
+  isPaidForCurrentCycle,
   urgencyBand,
   type Bill,
   type UrgencyBand,
@@ -41,23 +42,34 @@ function urgencyColor(days: number) {
 export function BillsTimeline({ bills, onOpen }: BillsTimelineProps) {
   const groups = useMemo(() => {
     const today = new Date();
-    const buckets: Record<UrgencyBand, Array<Bill & { _days: number }>> = {
+    const buckets: Record<
+      UrgencyBand,
+      Array<Bill & { _days: number; _paid: boolean }>
+    > = {
       overdue: [],
       this_week: [],
       later: [],
     };
     for (const b of bills) {
       const days = daysUntil(b.nextDueDate, today);
-      buckets[urgencyBand(days)].push({ ...b, _days: days });
+      const paid = isPaidForCurrentCycle(b, today);
+      buckets[urgencyBand(days)].push({ ...b, _days: days, _paid: paid });
     }
     for (const k of Object.keys(buckets) as UrgencyBand[]) {
-      buckets[k].sort((a, b) => a._days - b._days);
+      // Unpaid first within each band, then by closest due date.
+      buckets[k].sort((a, b) => {
+        if (a._paid !== b._paid) return a._paid ? 1 : -1;
+        return a._days - b._days;
+      });
     }
     return buckets;
   }, [bills]);
 
   const total = useMemo(
-    () => bills.reduce((sum, b) => sum + (Number(b.amount) || 0), 0),
+    () =>
+      bills
+        .filter((b) => !isPaidForCurrentCycle(b))
+        .reduce((sum, b) => sum + (Number(b.amount) || 0), 0),
     [bills],
   );
 
@@ -108,7 +120,12 @@ export function BillsTimeline({ bills, onOpen }: BillsTimelineProps) {
               <AnimatePresence initial={false}>
                 {items.map((b) => {
                   const emoji = CATEGORY_EMOJIS[b.category] || "🧾";
-                  const dColor = urgencyColor(b._days);
+                  const dColor = b._paid ? "#39FF14" : urgencyColor(b._days);
+                  const label = b._paid
+                    ? b.frequency === "one_off"
+                      ? "✓ Paid"
+                      : `✓ Paid · next ${dueLabel(b._days)}`
+                    : dueLabel(b._days);
                   return (
                     <motion.button
                       key={b.id}
@@ -120,8 +137,13 @@ export function BillsTimeline({ bills, onOpen }: BillsTimelineProps) {
                       onClick={() => onOpen(b)}
                       className="w-full rounded-[16px] p-3.5 flex items-center justify-between text-left"
                       style={{
-                        background: "rgba(255,255,255,0.04)",
-                        border: "1px solid rgba(255,255,255,0.07)",
+                        background: b._paid
+                          ? "rgba(57,255,20,0.04)"
+                          : "rgba(255,255,255,0.04)",
+                        border: b._paid
+                          ? "1px solid rgba(57,255,20,0.18)"
+                          : "1px solid rgba(255,255,255,0.07)",
+                        opacity: b._paid ? 0.75 : 1,
                       }}
                     >
                       <div className="flex items-center gap-3 min-w-0">
@@ -143,7 +165,7 @@ export function BillsTimeline({ bills, onOpen }: BillsTimelineProps) {
                                 background: `${dColor}1F`,
                               }}
                             >
-                              {dueLabel(b._days)}
+                              {label}
                             </span>
                             <span className="text-[11px] text-white/35 truncate">
                               {b.bank_account}
@@ -153,7 +175,12 @@ export function BillsTimeline({ bills, onOpen }: BillsTimelineProps) {
                       </div>
                       <span
                         className="font-extrabold text-sm flex-shrink-0 ml-2"
-                        style={{ color: "#FF7A8A" }}
+                        style={{
+                          color: b._paid
+                            ? "rgba(255,255,255,0.4)"
+                            : "#FF7A8A",
+                          textDecoration: b._paid ? "line-through" : "none",
+                        }}
                       >
                         {formatPKR(b.amount)}
                       </span>

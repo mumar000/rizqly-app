@@ -138,3 +138,36 @@ export function urgencyBand(days: number): UrgencyBand {
   if (days <= 7) return "this_week";
   return "later";
 }
+
+/**
+ * Single source of truth for "is this bill already settled for its current cycle?"
+ * Used by both the server pay route (to reject duplicate payments) and the
+ * client (to disable the Mark-paid button + show a Paid badge).
+ *
+ * Logic: after payment, `lastPaidAt` is set and (for recurring) `nextDueDate`
+ * has been advanced. As long as today is still before that advanced date,
+ * the cycle that just ended has been paid. One-off bills are paid forever
+ * once `lastPaidAt` is set.
+ *
+ * Accepts a structural subset so callers don't need the full Bill shape.
+ */
+export interface PayableLike {
+  frequency: BillFrequency;
+  nextDueDate: string;
+  lastPaidAt: string | null;
+}
+
+export function isPaidForCurrentCycle(
+  bill: PayableLike,
+  today: Date = new Date(),
+): boolean {
+  if (!bill.lastPaidAt) return false;
+  if (bill.frequency === "one_off") return true;
+
+  const next = new Date(bill.nextDueDate);
+  if (Number.isNaN(next.getTime())) return false;
+
+  const t = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const n = new Date(next.getFullYear(), next.getMonth(), next.getDate());
+  return t.getTime() < n.getTime();
+}

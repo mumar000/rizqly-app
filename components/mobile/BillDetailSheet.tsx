@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   daysUntil,
+  isPaidForCurrentCycle,
   type Bill,
   type BillFrequency,
 } from "@/services/bill.service";
@@ -52,10 +53,12 @@ export function BillDetailSheet({ bill, onClose }: BillDetailSheetProps) {
   const markPaid = useMarkBillPaid();
   const deleteBill = useDeleteBill();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!bill) {
       setConfirmDelete(false);
+      setPayError(null);
       return;
     }
     const handler = (e: KeyboardEvent) => {
@@ -65,9 +68,12 @@ export function BillDetailSheet({ bill, onClose }: BillDetailSheetProps) {
     return () => window.removeEventListener("keydown", handler);
   }, [bill, onClose]);
 
+  const paid = bill ? isPaidForCurrentCycle(bill) : false;
+  const paidToday =
+    bill?.lastPaidAt === new Date().toISOString().split("T")[0];
   const days = bill ? daysUntil(bill.nextDueDate) : 0;
   const emoji = bill ? CATEGORY_EMOJIS[bill.category] || "🧾" : "🧾";
-  const color = bill ? urgencyColor(days) : "#A78BFA";
+  const color = paid ? "#39FF14" : bill ? urgencyColor(days) : "#A78BFA";
 
   return (
     <AnimatePresence>
@@ -131,7 +137,7 @@ export function BillDetailSheet({ bill, onClose }: BillDetailSheetProps) {
               </h2>
               <p
                 className="mt-3 text-[40px] leading-none font-extrabold tracking-tight"
-                style={{ color: "#FF7A8A" }}
+                style={{ color: paid ? "rgba(255,255,255,0.55)" : "#FF7A8A" }}
               >
                 {formatPKR(bill.amount)}
               </p>
@@ -139,7 +145,13 @@ export function BillDetailSheet({ bill, onClose }: BillDetailSheetProps) {
                 className="mt-2 inline-block text-xs font-extrabold px-3 py-1 rounded-full"
                 style={{ color, background: `${color}1F` }}
               >
-                {dueLabel(days)}
+                {paid
+                  ? paidToday
+                    ? "✓ Paid today"
+                    : bill.frequency === "one_off"
+                      ? "✓ Paid"
+                      : "✓ Paid · next " + dueLabel(days)
+                  : dueLabel(days)}
               </p>
             </div>
 
@@ -157,16 +169,46 @@ export function BillDetailSheet({ bill, onClose }: BillDetailSheetProps) {
 
             {/* Actions */}
             <div className="relative mt-6 space-y-2">
-              <button
-                onClick={() =>
-                  markPaid.mutate(bill.id, { onSuccess: () => onClose() })
-                }
-                disabled={markPaid.isPending}
-                className="w-full rounded-2xl py-3.5 font-extrabold text-black text-sm disabled:opacity-40"
-                style={{ background: "#CCFF00" }}
-              >
-                {markPaid.isPending ? "Logging payment…" : "✓ Mark paid"}
-              </button>
+              {paid ? (
+                <div
+                  className="w-full rounded-2xl py-3.5 font-extrabold text-sm text-center"
+                  style={{
+                    background: "rgba(57,255,20,0.10)",
+                    color: "#39FF14",
+                    border: "1px solid rgba(57,255,20,0.3)",
+                  }}
+                >
+                  ✓{" "}
+                  {bill.frequency === "one_off"
+                    ? "Paid"
+                    : paidToday
+                      ? "Paid today"
+                      : `Paid · next due ${dueLabel(days)}`}
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    setPayError(null);
+                    markPaid.mutate(bill.id, {
+                      onSuccess: () => onClose(),
+                      onError: (err) => setPayError(err.message),
+                    });
+                  }}
+                  disabled={markPaid.isPending}
+                  className="w-full rounded-2xl py-3.5 font-extrabold text-black text-sm disabled:opacity-40"
+                  style={{ background: "#CCFF00" }}
+                >
+                  {markPaid.isPending ? "Logging payment…" : "✓ Mark paid"}
+                </button>
+              )}
+              {payError && (
+                <p
+                  className="text-xs font-bold text-center"
+                  style={{ color: "#FF7A8A" }}
+                >
+                  {payError}
+                </p>
+              )}
               <div className="flex gap-2">
                 <button
                   onClick={onClose}

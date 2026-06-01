@@ -1,5 +1,9 @@
 import { useMemo } from "react";
-import { daysUntil, type Bill } from "@/services/bill.service";
+import {
+  daysUntil,
+  isPaidForCurrentCycle,
+  type Bill,
+} from "@/services/bill.service";
 import { useBillSnoozes } from "@/hooks/useBillSnoozes";
 
 export interface AlertingBill extends Bill {
@@ -32,6 +36,7 @@ export function useDueAlerts(bills: Bill[]): DueAlerts {
   const alerts = useMemo<AlertingBill[]>(() => {
     const today = new Date();
     return bills
+      .filter((b) => !isPaidForCurrentCycle(b, today))
       .map((b) => ({ ...b, daysLeft: daysUntil(b.nextDueDate, today) }))
       .filter(
         (b) => b.daysLeft <= ALERT_WINDOW_DAYS && !isSnoozed(b.id, today),
