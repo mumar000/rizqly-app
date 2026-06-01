@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import {
   useTransactions,
@@ -59,18 +59,23 @@ export default function BudgetPage() {
     type: "this_month",
   });
   const periodMeta = usePeriodFilter(activePeriod);
+  const showDelta =
+    activePeriod.type === "last_month" || activePeriod.type === "ytd";
+
   const {
     data: transactions = [],
-    isLoading: transactionsLoading,
+    isPending: transactionsPending,
     refetch,
-  } = useTransactions({
-    ...periodMeta.filters,
-  });
+  } = useTransactions(periodMeta.filters);
   const { data: transactionStats } = useTransactionStats(periodMeta.filters);
-  const { data: priorStats } = useTransactionStats(periodMeta.priorFilters);
+  const { data: priorStats } = useTransactionStats(periodMeta.priorFilters, {
+    enabled: showDelta,
+  });
   const { data: banks = [] } = useBanks();
 
-  const isLoading = transactionsLoading;
+  // Single loading flag for the whole "first paint" of the page so all
+  // skeleton regions flip together — no waterfall, no multi-flash.
+  const isLoading = authLoading || transactionsPending;
 
   const { expenseBreakdown, incomeBreakdown } = useMemo(() => {
     const expense: Record<string, number> = {};
@@ -91,8 +96,6 @@ export default function BudgetPage() {
   const totalIncome = transactionStats?.totalIncome ?? 0;
   const totalExpenses = transactionStats?.totalExpenses ?? 0;
   const byBank = transactionStats?.byBank ?? {};
-  const showDelta =
-    activePeriod.type === "last_month" || activePeriod.type === "ytd";
   const txCount = transactions.length;
 
   return (
@@ -169,38 +172,25 @@ export default function BudgetPage() {
             </p>
           </div>
 
-          <AnimatePresence mode="wait">
-            {isLoading ? (
-              <motion.div
-                key="skel-in"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <div
-                  className="w-20 h-8 rounded-xl animate-pulse"
-                  style={{ background: "rgba(255,255,255,0.08)" }}
+          {isLoading ? (
+            <div
+              className="w-20 h-8 rounded-xl animate-pulse"
+              style={{ background: "rgba(255,255,255,0.08)" }}
+            />
+          ) : (
+            <>
+              <h2 className="text-xl sm:text-2xl font-extrabold text-white break-all">
+                {formatPKR(totalIncome)}
+              </h2>
+              {showDelta && (
+                <DeltaPill
+                  current={totalIncome}
+                  previous={priorStats?.totalIncome ?? 0}
+                  label={periodMeta.priorLabel}
                 />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="real-in"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <h2 className="text-xl sm:text-2xl font-extrabold text-white break-all">
-                  {formatPKR(totalIncome)}
-                </h2>
-                {showDelta && (
-                  <DeltaPill
-                    current={totalIncome}
-                    previous={priorStats?.totalIncome ?? 0}
-                    label={periodMeta.priorLabel}
-                  />
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
+              )}
+            </>
+          )}
         </motion.div>
 
         {/* Expense Card */}
@@ -243,39 +233,26 @@ export default function BudgetPage() {
             </p>
           </div>
 
-          <AnimatePresence mode="wait">
-            {isLoading ? (
-              <motion.div
-                key="skel-out"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <div
-                  className="w-20 h-8 rounded-xl animate-pulse"
-                  style={{ background: "rgba(255,255,255,0.08)" }}
+          {isLoading ? (
+            <div
+              className="w-20 h-8 rounded-xl animate-pulse"
+              style={{ background: "rgba(255,255,255,0.08)" }}
+            />
+          ) : (
+            <>
+              <h2 className="text-xl sm:text-2xl font-extrabold text-white break-all">
+                {formatPKR(totalExpenses)}
+              </h2>
+              {showDelta && (
+                <DeltaPill
+                  current={totalExpenses}
+                  previous={priorStats?.totalExpenses ?? 0}
+                  label={periodMeta.priorLabel}
+                  invert
                 />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="real-out"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <h2 className="text-xl sm:text-2xl font-extrabold text-white break-all">
-                  {formatPKR(totalExpenses)}
-                </h2>
-                {showDelta && (
-                  <DeltaPill
-                    current={totalExpenses}
-                    previous={priorStats?.totalExpenses ?? 0}
-                    label={periodMeta.priorLabel}
-                    invert
-                  />
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
+              )}
+            </>
+          )}
         </motion.div>
       </div>
 
@@ -286,59 +263,47 @@ export default function BudgetPage() {
           <DailyRizqCard />
         </div>
 
-        {/* Pie chart — skeleton while loading */}
+        {/* Pie chart */}
         <div>
-          <AnimatePresence mode="wait">
-            {isLoading ? (
-              <motion.div
-                key="skel-chart"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="rounded-[24px] p-5"
-                style={{
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                }}
-              >
+          {isLoading ? (
+            <div
+              className="rounded-[24px] p-5"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.06)",
+              }}
+            >
+              <div
+                className="w-36 h-5 rounded-xl mb-5 animate-pulse"
+                style={{ background: "rgba(255,255,255,0.07)" }}
+              />
+              <div className="flex items-center gap-6">
                 <div
-                  className="w-36 h-5 rounded-xl mb-5 animate-pulse"
-                  style={{ background: "rgba(255,255,255,0.07)" }}
+                  className="w-32 h-32 rounded-full animate-pulse flex-shrink-0"
+                  style={{ background: "rgba(255,255,255,0.06)" }}
                 />
-                <div className="flex items-center gap-6">
-                  <div
-                    className="w-32 h-32 rounded-full animate-pulse flex-shrink-0"
-                    style={{ background: "rgba(255,255,255,0.06)" }}
-                  />
-                  <div className="flex-1 space-y-3">
-                    {[80, 60, 70, 50].map((w, i) => (
-                      <div
-                        key={i}
-                        className="h-3.5 rounded-lg animate-pulse"
-                        style={{
-                          width: `${w}%`,
-                          background: "rgba(255,255,255,0.05)",
-                        }}
-                      />
-                    ))}
-                  </div>
+                <div className="flex-1 space-y-3">
+                  {[80, 60, 70, 50].map((w, i) => (
+                    <div
+                      key={i}
+                      className="h-3.5 rounded-lg animate-pulse"
+                      style={{
+                        width: `${w}%`,
+                        background: "rgba(255,255,255,0.05)",
+                      }}
+                    />
+                  ))}
                 </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="real-chart"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              >
-                <FinanceAnalyticsChart
-                  expenseData={expenseBreakdown}
-                  incomeData={incomeBreakdown}
-                  totalExpenses={totalExpenses}
-                  totalIncome={totalIncome}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+              </div>
+            </div>
+          ) : (
+            <FinanceAnalyticsChart
+              expenseData={expenseBreakdown}
+              incomeData={incomeBreakdown}
+              totalExpenses={totalExpenses}
+              totalIncome={totalIncome}
+            />
+          )}
         </div>
 
         <div className="-mx-6">

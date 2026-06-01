@@ -84,7 +84,7 @@ export default function TransactionsPage() {
     useState<Transaction | null>(null);
   const [groupsSheetOpen, setGroupsSheetOpen] = useState(false);
 
-  const { data: allTransactions = [], isLoading } = useTransactions(
+  const { data: allTransactions = [], isPending: isLoading } = useTransactions(
     periodMeta.filters,
   );
   const { data: stats } = useTransactionStats(periodMeta.filters);
