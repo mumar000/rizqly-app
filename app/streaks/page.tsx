@@ -62,53 +62,6 @@ export default function CalendarPage() {
     [viewMonth],
   );
 
-  const heroStats = useMemo(() => {
-    const counts = new Map<string, number>();
-    let totalTx = 0;
-    for (const t of transactions) {
-      const raw = t.date || t.created_at;
-      const d = new Date(raw);
-      if (Number.isNaN(d.getTime())) continue;
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-      const key = `${y}-${m}-${day}`;
-      counts.set(key, (counts.get(key) ?? 0) + 1);
-      totalTx += 1;
-    }
-    const daysInMonth = new Date(
-      viewMonth.getFullYear(),
-      viewMonth.getMonth() + 1,
-      0,
-    ).getDate();
-    const activeDays = counts.size;
-
-    let maxCount = 0;
-    let hottestDay: Date | null = null;
-    for (const [key, count] of counts) {
-      if (count > maxCount) {
-        maxCount = count;
-        const [y, m, d] = key.split("-").map(Number);
-        hottestDay = new Date(y, m - 1, d);
-      }
-    }
-
-    const today = new Date();
-    const todayY = today.getFullYear();
-    const todayM = String(today.getMonth() + 1).padStart(2, "0");
-    const todayD = String(today.getDate()).padStart(2, "0");
-    const todayKey = `${todayY}-${todayM}-${todayD}`;
-    const loggedToday = (counts.get(todayKey) ?? 0) > 0;
-
-    return {
-      activeDays,
-      daysInMonth,
-      totalTx,
-      hottestDay,
-      maxCount,
-      loggedToday,
-    };
-  }, [transactions, viewMonth]);
 
   const isCurrentMonth = useMemo(() => {
     const now = new Date();
@@ -175,29 +128,6 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        {/* Hero stat strip */}
-        <div className="mt-4 flex gap-2 overflow-x-auto no-scrollbar -mx-6 px-6">
-          <StatPill
-            icon="⚡"
-            label={heroStats.loggedToday ? "Active today" : "Quiet today"}
-            tone={heroStats.loggedToday ? "lime" : "muted"}
-            pulse={heroStats.loggedToday}
-          />
-          <StatPill
-            icon="✨"
-            label={`${heroStats.activeDays}/${heroStats.daysInMonth} days`}
-          />
-          {heroStats.hottestDay && (
-            <StatPill
-              icon="👑"
-              label={`${heroStats.hottestDay.toLocaleDateString("en-PK", {
-                weekday: "short",
-                day: "numeric",
-              })} · ${heroStats.maxCount}`}
-            />
-          )}
-          <StatPill icon="📊" label={`${heroStats.totalTx} total`} />
-        </div>
       </header>
 
       <section className="px-5 mt-3">
@@ -444,57 +374,3 @@ function BellButton({
   );
 }
 
-function StatPill({
-  icon,
-  label,
-  tone = "default",
-  pulse = false,
-}: {
-  icon: string;
-  label: string;
-  tone?: "default" | "lime" | "muted";
-  pulse?: boolean;
-}) {
-  const palette =
-    tone === "lime"
-      ? {
-          bg: "rgba(204,255,0,0.12)",
-          border: "rgba(204,255,0,0.3)",
-          text: "#CCFF00",
-        }
-      : tone === "muted"
-        ? {
-            bg: "rgba(255,255,255,0.04)",
-            border: "rgba(255,255,255,0.06)",
-            text: "rgba(255,255,255,0.5)",
-          }
-        : {
-            bg: "rgba(255,255,255,0.05)",
-            border: "rgba(255,255,255,0.08)",
-            text: "#fff",
-          };
-  return (
-    <div
-      className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-extrabold whitespace-nowrap"
-      style={{
-        background: palette.bg,
-        border: `1px solid ${palette.border}`,
-        color: palette.text,
-      }}
-    >
-      <span className="relative inline-flex items-center">
-        {icon}
-        {pulse && (
-          <motion.span
-            aria-hidden
-            className="absolute -right-1 -top-1 w-1.5 h-1.5 rounded-full"
-            style={{ background: "#CCFF00" }}
-            animate={{ opacity: [1, 0.2, 1], scale: [1, 1.4, 1] }}
-            transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-          />
-        )}
-      </span>
-      {label}
-    </div>
-  );
-}
