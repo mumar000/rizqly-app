@@ -1,202 +1,22 @@
 "use client";
 
-import React, { useCallback, useMemo, useState } from "react";
-import {
-  motion,
-  AnimatePresence,
-  useMotionValue,
-  useTransform,
-  animate,
-} from "framer-motion";
+import React, { useMemo, useState } from "react";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import {
   useTransactions,
   useTransactionStats,
 } from "@/hooks/queries/useTransactions";
-import { useDeleteTransaction } from "@/hooks/mutations/useDeleteTransaction";
 import { useBanks } from "@/hooks/queries/useBanks";
 import { usePeriodFilter } from "@/hooks/usePeriodFilter";
 import type { Period } from "@/types/period";
-import { type Transaction } from "@/services/transaction.service";
 import { FinanceAnalyticsChart } from "@/components/mobile/FinanceAnalyticsChart";
 import { DailyRizqCard } from "@/components/mobile/DailyRizqCard";
 import { PeriodSelector } from "@/components/mobile/PeriodSelector";
 import { BankCarousel } from "@/components/mobile/BankCarousel";
-import { TransactionDetailModal } from "@/components/mobile/TransactionDetailModal";
-import { SelectionCalcBar } from "@/components/mobile/SelectionCalcBar";
-import { SavedGroupsSheet } from "@/components/mobile/SavedGroupsSheet";
-import { useTransactionSelection } from "@/hooks/useTransactionSelection";
-import { useSavedGroups } from "@/hooks/useSavedGroups";
-import { useLongPress } from "@/hooks/useLongPress";
-import {
-  formatPKR,
-  CATEGORY_EMOJIS,
-  CATEGORY_COLORS,
-  INCOME_EMOJIS,
-  INCOME_COLORS,
-} from "@/utils/expenseParser";
+import { formatPKR } from "@/utils/expenseParser";
 
-interface SwipeableTransactionRowProps {
-  transaction: Transaction;
-  index: number;
-  selected: boolean;
-  selectionMode: boolean;
-  onDelete: (id: string) => void;
-  onOpen: (transaction: Transaction) => void;
-  onLongPress: (id: string) => void;
-  onToggleSelect: (id: string) => void;
-  formatDate: (s: string) => string;
-}
-
-function SwipeableTransactionRowImpl({
-  transaction,
-  index,
-  selected,
-  selectionMode,
-  onDelete,
-  onOpen,
-  onLongPress,
-  onToggleSelect,
-  formatDate,
-}: SwipeableTransactionRowProps) {
-  const x = useMotionValue(0);
-  const deleteOpacity = useTransform(x, [-100, -40, 0], [1, 0.5, 0]);
-  const deleteScale = useTransform(x, [-100, -40, 0], [1.1, 0.85, 0.6]);
-  const cardOpacity = useTransform(x, [-200, -120, 0], [0, 0.3, 1]);
-  const isIncome = transaction.direction === "income";
-  const categoryColor = isIncome
-    ? INCOME_COLORS[transaction.category] || "#22C55E"
-    : CATEGORY_COLORS[transaction.category] || "#8884d8";
-  const categoryEmoji = isIncome
-    ? INCOME_EMOJIS[transaction.category] || "✨"
-    : CATEGORY_EMOJIS[transaction.category] || "📦";
-
-  const { handlers: longPressHandlers, didFireRef } = useLongPress({
-    onLongPress: () => onLongPress(transaction.id),
-    enabled: !selectionMode,
-  });
-
-  const handleDragEnd = (_: unknown, info: { offset: { x: number } }) => {
-    if (info.offset.x < -80) {
-      animate(x, -500, { duration: 0.25, ease: "easeIn" }).then(() => {
-        onDelete(transaction.id);
-      });
-    } else {
-      animate(x, 0, { type: "spring", stiffness: 500, damping: 35 });
-    }
-  };
-
-  const handleTap = () => {
-    // Suppress the tap that follows a long-press release.
-    if (didFireRef.current) {
-      didFireRef.current = false;
-      return;
-    }
-    if (selectionMode) onToggleSelect(transaction.id);
-    else onOpen(transaction);
-  };
-
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-      transition={{ delay: Math.min(index, 8) * 0.03 }}
-      className="relative overflow-hidden rounded-[16px]"
-    >
-      {/* Red delete background (only visible while swiping) */}
-      {!selectionMode && (
-        <motion.div
-          style={{
-            opacity: deleteOpacity,
-            background:
-              "linear-gradient(90deg, transparent 0%, rgba(255,59,48,0.15) 30%, rgba(255,59,48,0.95) 100%)",
-          }}
-          className="absolute inset-0 flex items-center justify-end pr-5 rounded-[16px]"
-        >
-          <motion.div
-            style={{ scale: deleteScale }}
-            className="flex flex-col items-center gap-1"
-          >
-            <span className="text-2xl">🗑️</span>
-            <span className="text-white text-[10px] font-bold tracking-wide">
-              DELETE
-            </span>
-          </motion.div>
-        </motion.div>
-      )}
-
-      {/* Swipeable / selectable card */}
-      <motion.div
-        {...longPressHandlers}
-        drag={selectionMode ? false : "x"}
-        dragConstraints={{ left: -120, right: 0 }}
-        dragElastic={{ left: 0.15, right: 0 }}
-        onDragEnd={handleDragEnd}
-        onTap={handleTap}
-        animate={{ scale: selected ? 0.97 : 1 }}
-        transition={{ duration: 0.12 }}
-        style={{
-          x: selectionMode ? 0 : x,
-          opacity: selectionMode ? 1 : cardOpacity,
-          background: selected
-            ? "rgba(204,255,0,0.08)"
-            : "rgba(255,255,255,0.04)",
-          border: selected
-            ? "1px solid rgba(204,255,0,0.45)"
-            : "1px solid rgba(255,255,255,0.07)",
-          borderRadius: "16px",
-          willChange: "transform",
-        }}
-        className="relative p-4 flex items-center justify-between cursor-pointer"
-      >
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="relative flex-shrink-0">
-            <div
-              className="w-11 h-11 rounded-[14px] flex items-center justify-center text-xl"
-              style={{ background: `${categoryColor}18` }}
-            >
-              {categoryEmoji}
-            </div>
-            {selectionMode && (
-              <div
-                className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-extrabold"
-                style={{
-                  background: selected ? "#CCFF00" : "rgba(0,0,0,0.6)",
-                  color: selected ? "#000" : "#fff",
-                  border: selected
-                    ? "1.5px solid #15161F"
-                    : "1.5px solid rgba(255,255,255,0.15)",
-                }}
-              >
-                {selected ? "✓" : ""}
-              </div>
-            )}
-          </div>
-          <div className="min-w-0">
-            <p className="font-bold text-white text-sm truncate">
-              {transaction.description}
-            </p>
-            <div className="flex items-center gap-1.5 text-xs text-white/35 mt-0.5">
-              <span className="truncate">{transaction.bank_account}</span>
-              <span>·</span>
-              <span>{formatDate(transaction.created_at)}</span>
-            </div>
-          </div>
-        </div>
-        <span
-          className="font-extrabold text-sm flex-shrink-0 ml-2"
-          style={{ color: isIncome ? "#39FF14" : "#FF7A8A" }}
-        >
-          {formatPKR(Number(transaction.amount))}
-        </span>
-      </motion.div>
-    </motion.div>
-  );
-}
-
-const SwipeableTransactionRow = React.memo(SwipeableTransactionRowImpl);
 
 function DeltaPill({
   current,
@@ -238,9 +58,6 @@ export default function BudgetPage() {
   const [activePeriod, setActivePeriod] = useState<Period>({
     type: "this_month",
   });
-  const [selectedTransaction, setSelectedTransaction] =
-    useState<Transaction | null>(null);
-  const [groupsSheetOpen, setGroupsSheetOpen] = useState(false);
   const periodMeta = usePeriodFilter(activePeriod);
   const {
     data: transactions = [],
@@ -252,104 +69,31 @@ export default function BudgetPage() {
   const { data: transactionStats } = useTransactionStats(periodMeta.filters);
   const { data: priorStats } = useTransactionStats(periodMeta.priorFilters);
   const { data: banks = [] } = useBanks();
-  const deleteTransaction = useDeleteTransaction();
 
-  const selection = useTransactionSelection(transactions);
-  const savedGroups = useSavedGroups();
-
-  // Stable callbacks so memoized rows don't re-render needlessly.
-  const handleOpenDetail = useCallback(
-    (t: Transaction) => setSelectedTransaction(t),
-    [],
-  );
-  const handleDeleteOne = useCallback(
-    (id: string) => deleteTransaction.mutate(id),
-    [deleteTransaction],
-  );
-  const handleLongPress = selection.select;
-  const handleToggleSelect = selection.toggle;
-  const handleCancelSelection = selection.clear;
-
-  const handleSaveGroup = useCallback(
-    (name: string) => {
-      const { selectedTransactions, totalIncome, totalExpense, net } =
-        selection.stats;
-      if (selectedTransactions.length === 0) return;
-      savedGroups.save({
-        name,
-        transactionIds: selectedTransactions.map((t) => t.id),
-        total: totalIncome + totalExpense,
-        net,
-      });
-      selection.clear();
-    },
-    [selection, savedGroups],
-  );
-
-  const handleDeleteSelection = useCallback(() => {
-    const ids = Array.from(selection.selectedIds);
-    if (ids.length === 0) return;
-    ids.forEach((id) => deleteTransaction.mutate(id));
-    selection.clear();
-  }, [selection, deleteTransaction]);
-
-  // Session is pre-fetched server-side in layout, so status is "authenticated"
-  // on first render. isLoading only waits for the expenses query.
   const isLoading = transactionsLoading;
 
-  const periodKey = JSON.stringify(activePeriod);
-  const [expandedPeriodKey, setExpandedPeriodKey] = useState<string | null>(
-    null,
-  );
-  const showAll =
-    periodMeta.showAllByDefault || expandedPeriodKey === periodKey;
-
-  const expenseBreakdown = useMemo(() => {
-    const expensesOnly = transactions.filter((t) => t.direction === "expense");
-    const byCategory: Record<string, number> = {};
-    expensesOnly.forEach((expense) => {
-      byCategory[expense.category] =
-        (byCategory[expense.category] ?? 0) + Number(expense.amount);
-    });
-    return byCategory;
+  const { expenseBreakdown, incomeBreakdown } = useMemo(() => {
+    const expense: Record<string, number> = {};
+    const income: Record<string, number> = {};
+    for (const t of transactions) {
+      const amt = Number(t.amount) || 0;
+      if (t.direction === "expense") {
+        expense[t.category] = (expense[t.category] ?? 0) + amt;
+      } else {
+        income[t.category] = (income[t.category] ?? 0) + amt;
+      }
+    }
+    return { expenseBreakdown: expense, incomeBreakdown: income };
   }, [transactions]);
-
-  const incomeBreakdown = useMemo(() => {
-    const incomesOnly = transactions.filter((t) => t.direction === "income");
-    const byCategory: Record<string, number> = {};
-    incomesOnly.forEach((income) => {
-      byCategory[income.category] =
-        (byCategory[income.category] ?? 0) + Number(income.amount);
-    });
-    return byCategory;
-  }, [transactions]);
-
-  const formatDate = (s: string) => {
-    const diffMs = Date.now() - new Date(s).getTime();
-    const m = Math.floor(diffMs / 60000);
-    const h = Math.floor(diffMs / 3600000);
-    const d = Math.floor(diffMs / 86400000);
-    if (m < 1) return "Just now";
-    if (m < 60) return `${m}m ago`;
-    if (h < 24) return `${h}h ago`;
-    if (d < 7) return `${d}d ago`;
-    return new Date(s).toLocaleDateString("en-PK", {
-      month: "short",
-      day: "numeric",
-    });
-  };
 
   if (!user && !authLoading) return null;
 
-  const visibleLimit = periodMeta.pageSize ?? 5;
-  const visibleTransactions = showAll
-    ? transactions
-    : transactions.slice(0, visibleLimit);
   const totalIncome = transactionStats?.totalIncome ?? 0;
   const totalExpenses = transactionStats?.totalExpenses ?? 0;
   const byBank = transactionStats?.byBank ?? {};
   const showDelta =
     activePeriod.type === "last_month" || activePeriod.type === "ytd";
+  const txCount = transactions.length;
 
   return (
     <div
@@ -606,141 +350,60 @@ export default function BudgetPage() {
           />
         </div>
 
-        {/* Transactions */}
-        <div className="pb-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-extrabold text-white">
-              {periodMeta.transactionTitle}
-            </h3>
-            {!isLoading &&
-              !periodMeta.showAllByDefault &&
-              transactions.length > visibleLimit && (
-                <button
-                  onClick={() =>
-                    setExpandedPeriodKey(showAll ? null : periodKey)
-                  }
-                  className="text-[#CCFF00] text-sm font-bold"
-                >
-                  {showAll
-                    ? "Show Less"
-                    : activePeriod.type === "ytd"
-                      ? "Load More"
-                      : "See All"}
-                </button>
-              )}
-          </div>
-
-          <div className="space-y-2.5">
-            <AnimatePresence mode="popLayout">
-              {isLoading
-                ? [1, 2, 3].map((n) => (
-                    <motion.div
-                      key={`skel-tx-${n}`}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="rounded-[16px] p-4 flex items-center gap-3"
-                      style={{
-                        background: "rgba(255,255,255,0.04)",
-                        border: "1px solid rgba(255,255,255,0.06)",
-                      }}
-                    >
-                      <div
-                        className="w-11 h-11 rounded-[14px] flex-shrink-0 animate-pulse"
-                        style={{ background: "rgba(255,255,255,0.07)" }}
-                      />
-                      <div className="flex-1 space-y-2">
-                        <div
-                          className="w-3/5 h-3.5 rounded-lg animate-pulse"
-                          style={{ background: "rgba(255,255,255,0.07)" }}
-                        />
-                        <div
-                          className="w-2/5 h-3 rounded-lg animate-pulse"
-                          style={{ background: "rgba(255,255,255,0.04)" }}
-                        />
-                      </div>
-                      <div
-                        className="w-16 h-4 rounded-lg animate-pulse"
-                        style={{ background: "rgba(255,255,255,0.06)" }}
-                      />
-                    </motion.div>
-                  ))
-                : visibleTransactions.map((transaction, i) => (
-                    <SwipeableTransactionRow
-                      key={transaction.id}
-                      transaction={transaction}
-                      index={i}
-                      selected={selection.selectedIds.has(transaction.id)}
-                      selectionMode={selection.isSelectionMode}
-                      onDelete={handleDeleteOne}
-                      onOpen={handleOpenDetail}
-                      onLongPress={handleLongPress}
-                      onToggleSelect={handleToggleSelect}
-                      formatDate={formatDate}
-                    />
-                  ))}
-            </AnimatePresence>
-
-            {!isLoading && transactions.length === 0 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center py-10"
-              >
-                <div className="text-5xl mb-3">🎉</div>
-                <p className="text-white/40 font-medium">
-                  {periodMeta.emptyCopy}
-                </p>
-                <p className="text-white/20 text-sm mt-1">
-                  Tap + to add income or expense
-                </p>
-              </motion.div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <TransactionDetailModal
-        transaction={selectedTransaction}
-        onClose={() => setSelectedTransaction(null)}
-        onDelete={handleDeleteOne}
-      />
-
-      <SelectionCalcBar
-        visible={selection.isSelectionMode}
-        stats={selection.stats}
-        onCancel={handleCancelSelection}
-        onSaveGroup={handleSaveGroup}
-        onDeleteAll={handleDeleteSelection}
-      />
-
-      <SavedGroupsSheet
-        open={groupsSheetOpen}
-        groups={savedGroups.groups}
-        onClose={() => setGroupsSheetOpen(false)}
-        onOpenGroup={(g) => {
-          selection.replace(g.transactionIds);
-          setGroupsSheetOpen(false);
-        }}
-        onDeleteGroup={savedGroups.remove}
-      />
-
-      {savedGroups.groups.length > 0 && !selection.isSelectionMode && (
-        <button
-          onClick={() => setGroupsSheetOpen(true)}
-          className="fixed bottom-24 left-4 z-30 rounded-full px-3.5 py-2 flex items-center gap-1.5 text-xs font-extrabold text-white backdrop-blur-xl"
-          style={{
-            background: "rgba(20,21,32,0.85)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            boxShadow: "0 10px 30px -10px rgba(0,0,0,0.6)",
-          }}
+        {/* All transactions — dedicated page */}
+        <Link
+          href="/transactions"
+          className="block pb-4 group"
+          aria-label="See all transactions"
         >
-          🧮 Groups
-          <span className="text-[10px] text-white/40">
-            {savedGroups.groups.length}
-          </span>
-        </button>
-      )}
+          <motion.div
+            whileTap={{ scale: 0.98 }}
+            className="relative rounded-[24px] p-5 flex items-center justify-between overflow-hidden"
+            style={{
+              background:
+                "linear-gradient(140deg, rgba(204,255,0,0.06) 0%, rgba(255,255,255,0.03) 100%)",
+              border: "1px solid rgba(255,255,255,0.07)",
+            }}
+          >
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -right-10 -top-10 w-40 h-40 rounded-full blur-2xl opacity-50"
+              style={{ background: "rgba(204,255,0,0.18)" }}
+            />
+            <div className="relative flex items-center gap-3 min-w-0">
+              <div
+                className="w-12 h-12 rounded-[16px] flex items-center justify-center text-xl flex-shrink-0"
+                style={{
+                  background: "rgba(204,255,0,0.14)",
+                  border: "1px solid rgba(204,255,0,0.25)",
+                }}
+              >
+                🧾
+              </div>
+              <div className="min-w-0">
+                <p className="font-extrabold text-white text-sm">
+                  Transactions
+                </p>
+                <p className="text-white/45 text-xs mt-0.5">
+                  {isLoading
+                    ? "Loading…"
+                    : txCount === 0
+                      ? periodMeta.emptyCopy
+                      : `${txCount} ${
+                          txCount === 1 ? "entry" : "entries"
+                        } · ${periodMeta.label}`}
+                </p>
+              </div>
+            </div>
+            <span
+              className="relative text-base font-extrabold flex-shrink-0 ml-3"
+              style={{ color: "#CCFF00" }}
+            >
+              →
+            </span>
+          </motion.div>
+        </Link>
+      </div>
     </div>
   );
 }
