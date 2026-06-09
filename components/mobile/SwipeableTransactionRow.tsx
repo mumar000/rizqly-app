@@ -10,11 +10,10 @@ import {
 import { useLongPress } from "@/hooks/useLongPress";
 import {
   CATEGORY_COLORS,
-  CATEGORY_EMOJIS,
   INCOME_COLORS,
-  INCOME_EMOJIS,
   formatPKR,
 } from "@/utils/expenseParser";
+import { CategoryIcon } from "@/components/mobile/CategoryIcon";
 import type { Transaction } from "@/services/transaction.service";
 
 interface SwipeableTransactionRowProps {
@@ -48,9 +47,6 @@ function SwipeableTransactionRowImpl({
   const categoryColor = isIncome
     ? INCOME_COLORS[transaction.category] || "#22C55E"
     : CATEGORY_COLORS[transaction.category] || "#8884d8";
-  const categoryEmoji = isIncome
-    ? INCOME_EMOJIS[transaction.category] || "✨"
-    : CATEGORY_EMOJIS[transaction.category] || "📦";
 
   const { handlers: longPressHandlers, didFireRef } = useLongPress({
     onLongPress: () => onLongPress(transaction.id),
@@ -132,10 +128,14 @@ function SwipeableTransactionRowImpl({
         <div className="flex items-center gap-3 min-w-0">
           <div className="relative flex-shrink-0">
             <div
-              className="w-11 h-11 rounded-[14px] flex items-center justify-center text-xl"
+              className="w-11 h-11 rounded-[14px] flex items-center justify-center"
               style={{ background: `${categoryColor}18` }}
             >
-              {categoryEmoji}
+              <CategoryIcon
+                name={transaction.category}
+                color={categoryColor}
+                className="w-[22px] h-[22px]"
+              />
             </div>
             {selectionMode && (
               <div

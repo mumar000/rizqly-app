@@ -5,11 +5,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import type { Transaction } from "@/services/transaction.service";
 import {
   formatPKR,
-  CATEGORY_EMOJIS,
   CATEGORY_COLORS,
-  INCOME_EMOJIS,
   INCOME_COLORS,
 } from "@/utils/expenseParser";
+import { CategoryIcon } from "@/components/mobile/CategoryIcon";
 
 interface DayDetailSheetProps {
   date: Date | null;
@@ -201,9 +200,6 @@ function DayRow({
   const color = isIncome
     ? INCOME_COLORS[transaction.category] || "#22C55E"
     : CATEGORY_COLORS[transaction.category] || "#A78BFA";
-  const emoji = isIncome
-    ? INCOME_EMOJIS[transaction.category] || "✨"
-    : CATEGORY_EMOJIS[transaction.category] || "📦";
   const time = new Date(transaction.created_at).toLocaleTimeString("en-PK", {
     hour: "numeric",
     minute: "2-digit",
@@ -221,10 +217,14 @@ function DayRow({
     >
       <div className="flex items-center gap-3 min-w-0">
         <div
-          className="w-10 h-10 rounded-[12px] flex items-center justify-center text-lg flex-shrink-0"
+          className="w-10 h-10 rounded-[12px] flex items-center justify-center flex-shrink-0"
           style={{ background: `${color}1F` }}
         >
-          {emoji}
+          <CategoryIcon
+            name={transaction.category}
+            color={color}
+            className="w-5 h-5"
+          />
         </div>
         <div className="min-w-0">
           <p className="font-bold text-white text-sm truncate">

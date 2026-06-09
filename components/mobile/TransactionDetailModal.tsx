@@ -5,11 +5,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import { type Transaction } from "@/services/transaction.service";
 import {
   formatPKR,
-  CATEGORY_EMOJIS,
   CATEGORY_COLORS,
-  INCOME_EMOJIS,
   INCOME_COLORS,
 } from "@/utils/expenseParser";
+import { CategoryIcon } from "@/components/mobile/CategoryIcon";
 
 interface TransactionDetailModalProps {
   transaction: Transaction | null;
@@ -73,11 +72,6 @@ export function TransactionDetailModal({
       ? INCOME_COLORS[transaction.category] || "#22C55E"
       : CATEGORY_COLORS[transaction.category] || "#A78BFA"
     : "#A78BFA";
-  const emoji = transaction
-    ? isIncome
-      ? INCOME_EMOJIS[transaction.category] || "✨"
-      : CATEGORY_EMOJIS[transaction.category] || "📦"
-    : "📦";
 
   return (
     <AnimatePresence>
@@ -127,13 +121,18 @@ export function TransactionDetailModal({
                 initial={{ scale: 0.6, rotate: -8 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ type: "spring", stiffness: 320, damping: 18 }}
-                className="mx-auto w-20 h-20 rounded-[24px] flex items-center justify-center text-4xl"
+                className="mx-auto w-20 h-20 rounded-[24px] flex items-center justify-center"
                 style={{
                   background: `${color}22`,
                   boxShadow: `0 12px 40px -10px ${color}80`,
                 }}
               >
-                {emoji}
+                <CategoryIcon
+                  name={transaction.category}
+                  color={color}
+                  className="w-9 h-9"
+                  strokeWidth={1.6}
+                />
               </motion.div>
 
               <p className="mt-4 text-[10px] font-extrabold tracking-[0.2em] uppercase text-white/40">
@@ -165,26 +164,32 @@ export function TransactionDetailModal({
                 label="Category"
                 value={transaction.category}
                 accent={color}
-                icon={emoji}
+                icon={
+                  <CategoryIcon
+                    name={transaction.category}
+                    color={color}
+                    className="w-3.5 h-3.5"
+                  />
+                }
               />
               <Tile
                 label="Bank"
                 value={transaction.bank_account || "—"}
                 accent="#60A5FA"
-                icon="🏦"
+                icon={<BankGlyph />}
               />
               <Tile
                 label="Date"
                 value={formatDay(transaction.date || transaction.created_at)}
                 accent="#F472B6"
-                icon="📅"
+                icon={<CalendarGlyph />}
               />
               <Tile
                 label="Time"
                 value={formatTime(transaction.created_at)}
                 hint={relativeFromNow(transaction.created_at)}
                 accent="#FBBF24"
-                icon="⏰"
+                icon={<ClockGlyph />}
               />
             </div>
 
@@ -235,7 +240,7 @@ function Tile({
   value: string;
   hint?: string;
   accent: string;
-  icon: string;
+  icon: React.ReactNode;
 }) {
   return (
     <motion.div
@@ -263,5 +268,54 @@ function Tile({
         {hint && <p className="text-[11px] text-white/35 mt-0.5">{hint}</p>}
       </div>
     </motion.div>
+  );
+}
+
+function GlyphSvg({ children }: { children: React.ReactNode }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="w-3.5 h-3.5"
+      aria-hidden="true"
+    >
+      {children}
+    </svg>
+  );
+}
+
+function BankGlyph() {
+  return (
+    <GlyphSvg>
+      <path d="M3 9l9-6 9 6" />
+      <path d="M5 9v10h14V9" />
+      <path d="M9 13v3" />
+      <path d="M12 13v3" />
+      <path d="M15 13v3" />
+    </GlyphSvg>
+  );
+}
+
+function CalendarGlyph() {
+  return (
+    <GlyphSvg>
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M3 10h18" />
+      <path d="M8 3v4" />
+      <path d="M16 3v4" />
+    </GlyphSvg>
+  );
+}
+
+function ClockGlyph() {
+  return (
+    <GlyphSvg>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </GlyphSvg>
   );
 }
