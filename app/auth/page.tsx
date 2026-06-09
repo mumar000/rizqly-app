@@ -1,21 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-
-const FLOATING_EMOJIS = ["💰", "🚀", "💳", "📈", "💎", "💸", "🔥", "✨"];
-const FLOATING_EMOJI_POSITIONS = [
-  { x: "12%", y: "10%", driftX: -12, driftY: -72, duration: 16 },
-  { x: "74%", y: "18%", driftX: 18, driftY: -96, duration: 18 },
-  { x: "24%", y: "66%", driftX: -16, driftY: -64, duration: 14 },
-  { x: "84%", y: "72%", driftX: 14, driftY: -78, duration: 20 },
-  { x: "48%", y: "12%", driftX: 10, driftY: -54, duration: 15 },
-  { x: "8%", y: "82%", driftX: 22, driftY: -88, duration: 19 },
-  { x: "58%", y: "78%", driftX: -18, driftY: -70, duration: 17 },
-  { x: "92%", y: "42%", driftX: -10, driftY: -60, duration: 13 },
-];
 
 export default function AuthPage() {
   const [loading, setLoading] = useState(false);
@@ -35,7 +23,6 @@ export default function AuthPage() {
 
     try {
       await signInWithGoogle();
-      // User will be redirected to Google, then back to /budget
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "An error occurred");
       setLoading(false);
@@ -43,55 +30,17 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-[#0A0A0C]">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {FLOATING_EMOJIS.map((emoji, i) => (
-          <motion.div
-            key={i}
-            className="absolute text-4xl opacity-20"
-            initial={{
-              x: FLOATING_EMOJI_POSITIONS[i].x,
-              y: FLOATING_EMOJI_POSITIONS[i].y,
-            }}
-            animate={{
-              y: [null, FLOATING_EMOJI_POSITIONS[i].driftY, null],
-              x: [null, FLOATING_EMOJI_POSITIONS[i].driftX, null],
-              rotate: [0, 360],
-            }}
-            transition={{
-              duration: FLOATING_EMOJI_POSITIONS[i].duration,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-          >
-            {emoji}
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Background Glows */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-600/20 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#CCFF00]/10 rounded-full blur-[120px] pointer-events-none" />
-
+    <div className="min-h-screen flex items-center justify-center p-4 bg-[#0A0A0C]">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md z-10"
+        className="w-full max-w-md"
       >
         <div className="text-center mb-10">
-          <motion.div
-            initial={{ scale: 0.5, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 260, damping: 20 }}
-            className="w-20 h-20 bg-gradient-to-tr from-[#CCFF00] to-[#99CC00] rounded-3xl mx-auto flex items-center justify-center text-4xl shadow-[0_0_30px_rgba(204,255,0,0.3)] mb-6"
-          >
-            💸
-          </motion.div>
           <motion.h1
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.1 }}
             className="text-5xl font-black text-white mb-2 tracking-tighter"
           >
             RIZQLY
@@ -99,26 +48,22 @@ export default function AuthPage() {
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: 0.2 }}
             className="text-white/50 font-medium uppercase tracking-[0.2em] text-xs"
           >
             Level up your finance game
           </motion.p>
         </div>
 
-        <motion.div
-          layout
-          className="glass rounded-[32px] p-8 relative overflow-hidden"
+        <div
+          className="rounded-[32px] p-8"
           style={{
             background: "rgba(255, 255, 255, 0.03)",
             border: "1px solid rgba(255, 255, 255, 0.08)",
             backdropFilter: "blur(20px)",
           }}
         >
-          {/* Decorative gradient */}
-          <div className="absolute -top-20 -right-20 w-40 h-40 bg-[#CCFF00]/10 rounded-full blur-3xl" />
-
-          <div className="space-y-6 relative z-10">
+          <div className="space-y-6">
             <div className="text-center mb-4">
               <h2 className="text-xl font-black text-white mb-2">
                 One-Click Access
@@ -130,21 +75,20 @@ export default function AuthPage() {
 
             {error && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-500 text-sm font-medium text-center"
+                className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-sm font-medium text-center"
               >
-                🚫 {error}
+                {error}
               </motion.div>
             )}
 
-            {/* Google Sign-In Button */}
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleGoogleSignIn}
               disabled={loading}
-              className="w-full py-5 rounded-2xl font-bold text-lg bg-white hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_10px_30px_rgba(0,0,0,0.3)] flex items-center justify-center gap-3 relative overflow-hidden group"
+              className="w-full py-5 rounded-2xl font-bold text-lg bg-white hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_10px_30px_rgba(0,0,0,0.3)] flex items-center justify-center gap-3"
             >
               {loading ? (
                 <div className="flex items-center justify-center gap-3">
@@ -153,7 +97,6 @@ export default function AuthPage() {
                 </div>
               ) : (
                 <>
-                  {/* Google Logo SVG */}
                   <svg
                     className="w-6 h-6"
                     viewBox="0 0 24 24"
@@ -183,19 +126,18 @@ export default function AuthPage() {
               )}
             </motion.button>
 
-            {/* Divider with "or" removed since there's only Google now */}
             <div className="mt-6 text-center">
               <p className="text-xs text-white/20 uppercase tracking-widest">
                 Secure • Fast • No Password
               </p>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
+          transition={{ delay: 0.4 }}
           className="text-center text-[10px] text-white/20 mt-8 uppercase tracking-widest leading-relaxed"
         >
           By joining, you agree to secure the bag <br /> and follow our

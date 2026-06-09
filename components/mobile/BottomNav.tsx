@@ -2,14 +2,14 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { useState } from "react";
-import { QuickExpenseInput } from "@/components/mobile/QuickExpenseInput";
 import { useAddExpense } from "@/hooks/mutations/useAddExpense";
 import { useAddIncome } from "@/hooks/mutations/useAddIncome";
-import type { CreateExpenseInput } from "@/services/expense.service";
-import { AddIncomeSheet } from "@/components/mobile/AddIncomeSheet";
-import type { CreateTransactionInput } from "@/services/transaction.service";
+import {
+  AddTransactionModal,
+  type AddTransactionInput,
+} from "@/components/mobile/AddTransactionModal";
 
 function HomeIcon({ filled }: { filled: boolean }) {
   return (
@@ -76,20 +76,20 @@ const NAV_ITEMS = [
 
 export function BottomNav() {
   const pathname = usePathname();
-  const [showActions, setShowActions] = useState(false);
-  const [showExpenseSheet, setShowExpenseSheet] = useState(false);
-  const [showIncomeSheet, setShowIncomeSheet] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const { mutate: addExpense } = useAddExpense();
   const { mutate: addIncome } = useAddIncome();
 
-  const handleExpenseAdded = (expense: CreateExpenseInput) => {
-    addExpense(expense);
-  };
-
-  const handleIncomeAdded = (
-    income: Omit<CreateTransactionInput, "direction">
-  ) => {
-    addIncome(income);
+  const handleAdd = (data: AddTransactionInput) => {
+    const payload = {
+      amount: data.amount,
+      description: data.description,
+      bankAccount: data.bankAccount,
+      category: data.category,
+      rawInput: data.rawInput,
+    };
+    if (data.direction === "income") addIncome(payload);
+    else addExpense(payload);
   };
 
   return (
@@ -132,7 +132,7 @@ export function BottomNav() {
           <div className="flex-1 flex justify-center -mt-5">
             <motion.button
               whileTap={{ scale: 0.88 }}
-              onClick={() => setShowActions(true)}
+              onClick={() => setAddOpen(true)}
               className="w-14 h-14 rounded-full flex items-center justify-center"
               style={{
                 background: "#CCFF00",
@@ -141,7 +141,7 @@ export function BottomNav() {
             >
               <motion.svg
                 width="22" height="22" viewBox="0 0 24 24" fill="none"
-                animate={{ rotate: showActions ? 45 : 0 }}
+                animate={{ rotate: addOpen ? 45 : 0 }}
                 transition={{ type: "spring", stiffness: 500, damping: 25 }}
               >
                 <path d="M12 5v14M5 12h14" stroke="#000" strokeWidth="2.5" strokeLinecap="round" />
@@ -174,85 +174,10 @@ export function BottomNav() {
         </div>
       </div>
 
-      <AnimatePresence>
-        {showActions && (
-          <>
-            <motion.button
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowActions(false)}
-              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px]"
-            />
-
-            <motion.div
-              initial={{ opacity: 0, y: 16, scale: 0.94 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.96 }}
-              transition={{ type: "spring", stiffness: 420, damping: 28 }}
-              className="fixed left-1/2 bottom-28 z-50 w-[calc(100%-32px)] max-w-sm -translate-x-1/2 rounded-[28px] p-3"
-              style={{
-                background: "rgba(14,14,18,0.96)",
-                border: "1px solid rgba(255,255,255,0.08)",
-                boxShadow: "0 16px 60px rgba(0,0,0,0.45)",
-              }}
-            >
-              <button
-                onClick={() => {
-                  setShowActions(false);
-                  setShowExpenseSheet(true);
-                }}
-                className="w-full rounded-[22px] px-4 py-4 flex items-center justify-between text-left"
-                style={{
-                  background:
-                    "linear-gradient(135deg, rgba(204,255,0,0.12) 0%, rgba(204,255,0,0.04) 100%)",
-                  border: "1px solid rgba(204,255,0,0.12)",
-                }}
-              >
-                <div>
-                  <p className="text-white font-extrabold text-sm">Add Expense</p>
-                  <p className="text-white/35 text-xs mt-1">Track money going out</p>
-                </div>
-                <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl bg-[#CCFF00] text-black">
-                  💸
-                </div>
-              </button>
-
-              <button
-                onClick={() => {
-                  setShowActions(false);
-                  setShowIncomeSheet(true);
-                }}
-                className="w-full rounded-[22px] px-4 py-4 flex items-center justify-between text-left mt-2.5"
-                style={{
-                  background:
-                    "linear-gradient(135deg, rgba(34,197,94,0.14) 0%, rgba(34,197,94,0.04) 100%)",
-                  border: "1px solid rgba(134,239,172,0.12)",
-                }}
-              >
-                <div>
-                  <p className="text-white font-extrabold text-sm">Add Money</p>
-                  <p className="text-white/35 text-xs mt-1">Track money coming in</p>
-                </div>
-                <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl bg-[#86EFAC] text-[#052E16]">
-                  ✨
-                </div>
-              </button>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-
-      <QuickExpenseInput
-        onExpenseAdded={handleExpenseAdded}
-        open={showExpenseSheet}
-        onClose={() => setShowExpenseSheet(false)}
-      />
-
-      <AddIncomeSheet
-        open={showIncomeSheet}
-        onClose={() => setShowIncomeSheet(false)}
-        onIncomeAdded={handleIncomeAdded}
+      <AddTransactionModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onSubmit={handleAdd}
       />
     </>
   );
