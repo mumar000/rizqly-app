@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queryKeys";
 import { INIT_QUERY_KEY } from "@/hooks/queries/useInitData";
 import { expenseService, type Expense, type CreateExpenseInput } from "@/services/expense.service";
+import { newClientId } from "@/lib/idempotency";
 
 export function useAddExpense() {
   const queryClient = useQueryClient();
@@ -10,6 +11,11 @@ export function useAddExpense() {
     mutationFn: (input: CreateExpenseInput) => expenseService.create(input),
 
     onMutate: async (input) => {
+      // Stamp a stable clientId so retries / pause-and-resume reuse it.
+      // Mutating the variables object is intentional — react-query persists
+      // the same reference across retries.
+      if (!input.clientId) input.clientId = newClientId();
+
       await queryClient.cancelQueries({ queryKey: queryKeys.expenses.all });
 
       const previous = queryClient.getQueryData<Expense[]>(queryKeys.expenses.list());

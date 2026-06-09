@@ -5,6 +5,7 @@ import {
   type Bill,
   type CreateBillInput,
 } from "@/services/bill.service";
+import { newClientId } from "@/lib/idempotency";
 
 export function useAddBill() {
   const queryClient = useQueryClient();
@@ -13,6 +14,8 @@ export function useAddBill() {
     mutationFn: (input: CreateBillInput) => billService.create(input),
 
     onMutate: async (input) => {
+      if (!input.clientId) input.clientId = newClientId();
+
       await queryClient.cancelQueries({ queryKey: queryKeys.bills.all });
       const previous = queryClient.getQueryData<Bill[]>(queryKeys.bills.list());
 

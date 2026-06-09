@@ -37,8 +37,42 @@ export async function POST(req: Request) {
     const data = await req.json();
     await dbConnect();
 
+    const clientId =
+      typeof data.clientId === "string" && data.clientId.length > 0
+        ? data.clientId
+        : null;
+
+    if (clientId) {
+      const existing = await Transaction.findOne({
+        userId: session.user.id,
+        clientId,
+      });
+      if (existing) {
+        const expenseLike = transactionToExpenseLike({
+          id: existing._id.toString(),
+          direction: "expense",
+          amount: existing.amount,
+          description: existing.description,
+          bank_account: existing.bank_account,
+          category: existing.category,
+          date: existing.date,
+          sourceType: existing.sourceType,
+          receiptId: existing.receiptId,
+          rawInput: existing.rawInput,
+          scanConfidence: existing.scanConfidence,
+          scanStatus: existing.scanStatus,
+          relatedGoalId: existing.relatedGoalId,
+          created_at: existing.createdAt,
+          user_id: session.user.id,
+          source: "transaction",
+        });
+        return NextResponse.json(expenseLike, { status: 200 });
+      }
+    }
+
     const newTransaction = await Transaction.create({
       userId: session.user.id,
+      clientId,
       direction: "expense",
       amount: data.amount,
       description: data.description,

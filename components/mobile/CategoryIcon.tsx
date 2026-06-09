@@ -198,10 +198,10 @@ function RepeatIcon() {
 function WifiIcon() {
   return (
     <>
-      <path d="M2 9a16 16 0 0 1 20 0" />
-      <path d="M5 13a11 11 0 0 1 14 0" />
-      <path d="M8 17a6 6 0 0 1 8 0" />
-      <circle cx="12" cy="20" r="1" />
+      <path d="M2 8.82a15 15 0 0 1 20 0" />
+      <path d="M5 12.86a10 10 0 0 1 14 0" />
+      <path d="M8.5 16.43a5 5 0 0 1 7 0" />
+      <path d="M12 20h.01" />
     </>
   );
 }

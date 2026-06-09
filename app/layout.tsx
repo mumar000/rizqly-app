@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
 import { Providers } from "@/app/providers";
 import { GlobalNav } from "@/components/mobile/GlobalNav";
+import { SyncStatusBanner } from "@/components/mobile/SyncStatusBanner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,6 +41,7 @@ export default function RootLayout({
       >
         <Providers>
           <AuthProvider>
+            <SyncStatusBanner />
             {children}
             <GlobalNav />
           </AuthProvider>

@@ -16,6 +16,8 @@ export interface CreateExpenseInput {
   bankAccount: string;
   category: string;
   rawInput: string;
+  /** Client-generated UUID for server-side idempotency. Stamped by the mutation hook. */
+  clientId?: string;
 }
 
 export interface MonthlyStats {
@@ -52,6 +54,7 @@ export const expenseService = {
           bank_account: input.bankAccount,
           raw_input: input.rawInput,
           date: new Date().toISOString().split("T")[0],
+          clientId: input.clientId,
         }),
       })
     );

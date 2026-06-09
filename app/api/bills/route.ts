@@ -86,8 +86,28 @@ export async function POST(req: Request) {
     }
 
     await dbConnect();
+
+    const clientId =
+      typeof body.clientId === "string" && body.clientId.length > 0
+        ? body.clientId
+        : null;
+
+    if (clientId) {
+      const existing = await Bill.findOne({
+        userId: session.user.id,
+        clientId,
+      });
+      if (existing) {
+        return NextResponse.json(
+          formatBill(existing.toObject() as Record<string, unknown>),
+          { status: 200 },
+        );
+      }
+    }
+
     const doc = await Bill.create({
       userId: session.user.id,
+      clientId,
       name: name.trim(),
       amount,
       category,

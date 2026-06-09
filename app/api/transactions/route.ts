@@ -105,8 +105,34 @@ export async function POST(req: Request) {
 
     await dbConnect();
 
+    // Idempotency: if the client sent a clientId and we've already saved a
+    // row with that clientId for this user, return the existing row instead
+    // of creating a duplicate. Handles "added same tx offline on two devices".
+    const clientId =
+      typeof body.clientId === "string" && body.clientId.length > 0
+        ? body.clientId
+        : null;
+
+    if (clientId) {
+      const existing = await Transaction.findOne({
+        userId: session.user.id,
+        clientId,
+      });
+      if (existing) {
+        return NextResponse.json(
+          formatDoc(
+            formatTransactionDoc(
+              existing as typeof existing & { _id: { toString(): string } },
+            ) as unknown as Record<string, unknown>,
+          ),
+          { status: 200 },
+        );
+      }
+    }
+
     const doc = await Transaction.create({
       userId: session.user.id,
+      clientId,
       direction,
       amount,
       description: description.trim(),

@@ -1,7 +1,9 @@
 "use client";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { useState } from "react";
+import { createIndexedDbPersister } from "@/lib/queryPersister";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -9,20 +11,38 @@ export function Providers({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 1000 * 60 * 5,  // 5 min — avoid background refetches on every navigation
-            gcTime: 1000 * 60 * 30,
-            retry: 1,                   // 1 retry instead of 2 — faster failure, less loading time
+            staleTime: 1000 * 60 * 5,
+            // Cache data for 30 days so it survives offline sessions.
+            gcTime: 1000 * 60 * 60 * 24 * 30,
+            retry: 1,
             refetchOnWindowFocus: false,
-            refetchOnMount: false,      // don't refetch when navigating back if data is fresh
+            refetchOnMount: false,
+            // While offline, keep showing cached data instead of erroring.
+            networkMode: "offlineFirst",
           },
           mutations: {
             retry: 1,
+            // Mutations pause when offline, resume when back online,
+            // executing in submission order.
+            networkMode: "offlineFirst",
           },
         },
-      })
+      }),
   );
 
+  const [persister] = useState(() => createIndexedDbPersister());
+
   return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{
+        persister,
+        maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days — prune older
+        // Bump when the data shape changes so old caches don't poison new clients.
+        buster: "v1",
+      }}
+    >
+      {children}
+    </PersistQueryClientProvider>
   );
 }

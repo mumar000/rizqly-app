@@ -28,6 +28,8 @@ export interface CreateTransactionInput {
   sourceType?: "manual" | "natural_language" | "receipt_scan" | "system";
   rawInput?: string;
   relatedGoalId?: string | null;
+  /** Client-generated UUID for server-side idempotency. */
+  clientId?: string;
 }
 
 export interface TransactionStats {
@@ -76,6 +78,7 @@ export const transactionService = {
           sourceType: input.sourceType ?? "manual",
           rawInput: input.rawInput ?? "",
           relatedGoalId: input.relatedGoalId ?? null,
+          clientId: input.clientId,
         }),
       })
     );

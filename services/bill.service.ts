@@ -22,6 +22,8 @@ export interface CreateBillInput {
   frequency: BillFrequency;
   nextDueDate: string;
   reminderEnabled?: boolean;
+  /** Client-generated UUID for server-side idempotency. */
+  clientId?: string;
 }
 
 export interface UpdateBillInput {

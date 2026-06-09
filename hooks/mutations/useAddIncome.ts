@@ -6,6 +6,7 @@ import {
   type Transaction,
   type CreateTransactionInput,
 } from "@/services/transaction.service";
+import { newClientId } from "@/lib/idempotency";
 
 export function useAddIncome() {
   const queryClient = useQueryClient();
@@ -15,6 +16,8 @@ export function useAddIncome() {
       transactionService.create({ ...input, direction: "income" }),
 
     onMutate: async (newIncome) => {
+      if (!newIncome.clientId) newIncome.clientId = newClientId();
+
       await queryClient.cancelQueries({ queryKey: queryKeys.transactions.all });
 
       const previous = queryClient.getQueryData<Transaction[]>(

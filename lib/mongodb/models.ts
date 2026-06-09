@@ -245,6 +245,8 @@ export const SpendStreak =
 export interface ITransaction extends Document {
   _id: mongoose.Types.ObjectId;
   userId: string;
+  /** Client-generated UUID for offline idempotency (sparse). */
+  clientId: string | null;
   direction: "income" | "expense";
   amount: number;
   description: string;
@@ -264,6 +266,7 @@ export interface ITransaction extends Document {
 const TransactionSchema = new Schema<ITransaction>(
   {
     userId: { type: String, required: true },
+    clientId: { type: String, default: null },
     direction: { type: String, required: true, enum: ["income", "expense"] },
     amount: { type: Number, required: true },
     description: { type: String, required: true },
@@ -291,6 +294,10 @@ const TransactionSchema = new Schema<ITransaction>(
 
 TransactionSchema.index({ userId: 1, date: -1 });
 TransactionSchema.index({ userId: 1, direction: 1, date: -1 });
+TransactionSchema.index(
+  { userId: 1, clientId: 1 },
+  { unique: true, sparse: true, partialFilterExpression: { clientId: { $type: "string" } } },
+);
 
 export const Transaction =
   mongoose.models.Transaction ||
@@ -300,6 +307,7 @@ export const Transaction =
 export interface IBill extends Document {
   _id: mongoose.Types.ObjectId;
   userId: string;
+  clientId: string | null;
   name: string;
   amount: number;
   category: string;
@@ -315,6 +323,7 @@ export interface IBill extends Document {
 const BillSchema = new Schema<IBill>(
   {
     userId: { type: String, required: true },
+    clientId: { type: String, default: null },
     name: { type: String, required: true },
     amount: { type: Number, required: true },
     category: { type: String, required: true, default: "Bills" },
@@ -333,6 +342,10 @@ const BillSchema = new Schema<IBill>(
 );
 
 BillSchema.index({ userId: 1, nextDueDate: 1 });
+BillSchema.index(
+  { userId: 1, clientId: 1 },
+  { unique: true, sparse: true, partialFilterExpression: { clientId: { $type: "string" } } },
+);
 
 export const Bill =
   mongoose.models.Bill || mongoose.model<IBill>("Bill", BillSchema);
